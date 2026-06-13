@@ -3,23 +3,25 @@ import {
   View, Text, TextInput, Pressable, StyleSheet, Alert,
   ActivityIndicator, ScrollView, Switch, Image
 } from 'react-native';
-import { api, apiUpload, getToken, saveTokens } from '../api/client';
+import { api, apiUpload } from '../api/client';
 import FontAwesome from 'react-native-vector-icons/FontAwesome';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
+import * as ImagePicker from 'expo-image-picker';
+import * as Location from 'expo-location';
+import { colors, spacing, radius, shadows, typography } from '../styles/theme';
 
 export default function CrearPerfilPerroScreen({ navigation, onCompletado, onLogout }) {
   const [nombre, setNombre] = useState('');
   const [raza, setRaza] = useState('');
   const [edadTexto, setEdadTexto] = useState('');
-  const [sexo, setSexo] = useState(null); // 'macho' | 'hembra'
+  const [sexo, setSexo] = useState(null);
   const [castrado, setCastrado] = useState(false);
   const [descripcion, setDescripcion] = useState('');
-  const [proposito, setProposito] = useState(null); // 'jugar' | 'pasear' | 'reproduccion' | 'todo'
+  const [proposito, setProposito] = useState(null);
   const [loading, setLoading] = useState(false);
   const [locating, setLocating] = useState(false);
-  const [ubicacion, setUbicacion] = useState(null); // { lat, lng }
+  const [ubicacion, setUbicacion] = useState(null);
   const [fotoUri, setFotoUri] = useState(null);
-  const [fotoBase64, setFotoBase64] = useState(null);
 
   const propositos = [
     { key: 'jugar', label: 'Jugar', icon: 'sports-esports' },
@@ -31,17 +33,14 @@ export default function CrearPerfilPerroScreen({ navigation, onCompletado, onLog
   const obtenerUbicacion = async () => {
     try {
       setLocating(true);
-      const { getCurrentPositionAsync, requestForegroundPermissionsAsync } =
-        await import('expo-location');
-
-      const { status } = await requestForegroundPermissionsAsync();
+      const { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== 'granted') {
         Alert.alert('Permiso denegado', 'Necesitamos acceso a tu ubicación para encontrar perros cerca');
         setLocating(false);
         return;
       }
 
-      const pos = await getCurrentPositionAsync({});
+      const pos = await Location.getCurrentPositionAsync({});
       setUbicacion({ lat: pos.coords.latitude, lng: pos.coords.longitude });
       Alert.alert('Ubicación obtenida', 'Se usará para mostrar perros cercanos');
     } catch (error) {
@@ -53,30 +52,28 @@ export default function CrearPerfilPerroScreen({ navigation, onCompletado, onLog
 
   const seleccionarFoto = async () => {
     try {
-      const { launchImageLibraryAsync, requestMediaLibraryPermissionsAsync } =
-        await import('expo-image-picker');
-
-      const { status } = await requestMediaLibraryPermissionsAsync();
+      setLoading(true);
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (status !== 'granted') {
         Alert.alert('Permiso denegado', 'Necesitamos acceso a tus fotos');
+        setLoading(false);
         return;
       }
 
-      const result = await launchImageLibraryAsync({
-        allowsEditing: true,
+      const result = await ImagePicker.launchImageLibraryAsync({
         allowsEditing: true,
         aspect: [1, 1],
         quality: 0.7,
-        base64: true,
       });
 
       if (!result.canceled && result.assets && result.assets.length > 0) {
         const asset = result.assets[0];
         setFotoUri(asset.uri);
-        setFotoBase64(asset.base64);
       }
     } catch (error) {
       Alert.alert('Error', 'No se pudo seleccionar la foto');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -95,26 +92,9 @@ export default function CrearPerfilPerroScreen({ navigation, onCompletado, onLog
     }
 
     setLoading(true);
-    console.log('[CrearPerfil] Iniciando guardado, fotoBase64:', !!fotoBase64, 'ubicacion:', !!ubicacion);
+    console.log('[CrearPerfil] Iniciando guardado, fotoUri:', !!fotoUri, 'ubicacion:', !!ubicacion);
     try {
-      const body = {
-        nombre: nombre.trim(),
-        raza: raza.trim() || undefined,
-        edadMeses: edadTexto ? parseInt(edadTexto, 10) : undefined,
-        sexo,
-        castrado,
-        descripcion: descripcion.trim() || undefined,
-        proposito,
-      };
-
-      if (ubicacion) {
-        body.latitud = ubicacion.lat;
-        body.longitud = ubicacion.lng;
-      }
-
-      let perroId = null;
-
-      if (fotoBase64) {
+      if (fotoUri) {
         console.log('[CrearPerfil] Enviando con foto (multipart)');
         const formData = new FormData();
         formData.append('nombre', nombre.trim());
@@ -128,7 +108,6 @@ export default function CrearPerfilPerroScreen({ navigation, onCompletado, onLog
           formData.append('latitud', String(ubicacion.lat));
           formData.append('longitud', String(ubicacion.lng));
         }
-        // Agregar archivo de foto
         const filename = fotoUri.split('/').pop() || 'foto.jpg';
         formData.append('foto', {
           uri: fotoUri,
@@ -141,6 +120,19 @@ export default function CrearPerfilPerroScreen({ navigation, onCompletado, onLog
         console.log('[CrearPerfil] apiUpload respuesta:', JSON.stringify(res).slice(0, 100));
       } else {
         console.log('[CrearPerfil] Enviando sin foto (JSON)');
+        const body = {
+          nombre: nombre.trim(),
+          raza: raza.trim() || undefined,
+          edadMeses: edadTexto ? parseInt(edadTexto, 10) : undefined,
+          sexo,
+          castrado,
+          descripcion: descripcion.trim() || undefined,
+          proposito,
+        };
+        if (ubicacion) {
+          body.latitud = ubicacion.lat;
+          body.longitud = ubicacion.lng;
+        }
         const res = await api('POST', '/perros', body);
         console.log('[CrearPerfil] api respuesta:', JSON.stringify(res).slice(0, 100));
       }
@@ -172,12 +164,12 @@ export default function CrearPerfilPerroScreen({ navigation, onCompletado, onLog
             if (onLogout) onLogout();
           }}
         >
-          <MaterialIcons name="logout" size={18} color="#FF3B30" />
+          <MaterialIcons name="logout" size={18} color={colors.error} />
           <Text style={styles.logoutBtnText}>Cerrar sesión</Text>
         </Pressable>
       </View>
 
-      <Text style={styles.title}>Crea el perfil de tu perro</Text>
+      <Text style={styles.title}>🐾 Crea el perfil</Text>
       <Text style={styles.subtitle}>Cuéntanos sobre tu compañero</Text>
 
       {/* Botón de foto */}
@@ -185,7 +177,9 @@ export default function CrearPerfilPerroScreen({ navigation, onCompletado, onLog
         {fotoUri ? (
           <Image source={{ uri: fotoUri }} style={styles.fotoPreview} />
         ) : (
-          <MaterialIcons name="add-a-photo" size={32} color="#34C759" />
+          <View style={styles.fotoPlaceholderIcon}>
+            <MaterialIcons name="pets" size={36} color={colors.accent} />
+          </View>
         )}
         <Text style={styles.fotoText}>{fotoUri ? 'Cambiar foto' : 'Agregar foto'}</Text>
       </Pressable>
@@ -195,7 +189,7 @@ export default function CrearPerfilPerroScreen({ navigation, onCompletado, onLog
       <TextInput
         style={styles.input}
         placeholder="Ej: Max, Luna, Toby"
-        placeholderTextColor="#555"
+        placeholderTextColor={colors.textMuted}
         value={nombre}
         onChangeText={setNombre}
       />
@@ -205,7 +199,7 @@ export default function CrearPerfilPerroScreen({ navigation, onCompletado, onLog
       <TextInput
         style={styles.input}
         placeholder="Ej: Labrador, Pastor Alemán"
-        placeholderTextColor="#555"
+        placeholderTextColor={colors.textMuted}
         value={raza}
         onChangeText={setRaza}
       />
@@ -215,7 +209,7 @@ export default function CrearPerfilPerroScreen({ navigation, onCompletado, onLog
       <TextInput
         style={styles.input}
         placeholder="Ej: 24 (2 años)"
-        placeholderTextColor="#555"
+        placeholderTextColor={colors.textMuted}
         value={edadTexto}
         onChangeText={setEdadTexto}
         keyboardType="number-pad"
@@ -228,14 +222,14 @@ export default function CrearPerfilPerroScreen({ navigation, onCompletado, onLog
           style={[styles.sexButton, sexo === 'macho' && styles.sexSelected]}
           onPress={() => setSexo('macho')}
         >
-          <MaterialIcons name="male" size={22} color={sexo === 'macho' ? '#34C759' : '#666'} />
+          <MaterialIcons name="male" size={22} color={sexo === 'macho' ? colors.primary : colors.textMuted} />
           <Text style={[styles.sexText, sexo === 'macho' && styles.sexTextSelected]}>Macho</Text>
         </Pressable>
         <Pressable
           style={[styles.sexButton, sexo === 'hembra' && styles.sexSelected]}
           onPress={() => setSexo('hembra')}
         >
-          <MaterialIcons name="female" size={22} color={sexo === 'hembra' ? '#34C759' : '#666'} />
+          <MaterialIcons name="female" size={22} color={sexo === 'hembra' ? colors.primary : colors.textMuted} />
           <Text style={[styles.sexText, sexo === 'hembra' && styles.sexTextSelected]}>Hembra</Text>
         </Pressable>
       </View>
@@ -246,8 +240,8 @@ export default function CrearPerfilPerroScreen({ navigation, onCompletado, onLog
         <Switch
           value={castrado}
           onValueChange={setCastrado}
-          trackColor={{ false: '#333', true: '#34C759' }}
-          thumbColor={castrado ? '#fff' : '#888'}
+          trackColor={{ false: colors.border, true: colors.primaryLight }}
+          thumbColor={castrado ? colors.primary : colors.textMuted}
         />
       </View>
 
@@ -260,7 +254,7 @@ export default function CrearPerfilPerroScreen({ navigation, onCompletado, onLog
             style={[styles.propositoCard, proposito === p.key && styles.propositoSelected]}
             onPress={() => setProposito(p.key)}
           >
-            <MaterialIcons name={p.icon} size={24} color={proposito === p.key ? '#34C759' : '#666'} />
+            <MaterialIcons name={p.icon} size={22} color={proposito === p.key ? colors.primary : colors.textMuted} />
             <Text style={[styles.propositoText, proposito === p.key && styles.propositoTextSelected]}>
               {p.label}
             </Text>
@@ -273,7 +267,7 @@ export default function CrearPerfilPerroScreen({ navigation, onCompletado, onLog
       <TextInput
         style={[styles.input, styles.textArea]}
         placeholder="Describe la personalidad de tu perro..."
-        placeholderTextColor="#555"
+        placeholderTextColor={colors.textMuted}
         value={descripcion}
         onChangeText={setDescripcion}
         multiline
@@ -287,9 +281,9 @@ export default function CrearPerfilPerroScreen({ navigation, onCompletado, onLog
         disabled={locating}
       >
         {locating ? (
-          <ActivityIndicator color="#34C759" />
+          <ActivityIndicator color={colors.primary} />
         ) : (
-          <MaterialIcons name="my-location" size={20} color={ubicacion ? '#34C759' : '#888'} />
+          <MaterialIcons name="my-location" size={20} color={ubicacion ? colors.primary : colors.textMuted} />
         )}
         <Text style={[styles.locationText, ubicacion && styles.locationTextSet]}>
           {ubicacion ? '📍 Ubicación obtenida' : 'Obtener ubicación'}
@@ -298,15 +292,15 @@ export default function CrearPerfilPerroScreen({ navigation, onCompletado, onLog
 
       {/* Botón guardar */}
       <Pressable
-        style={({ pressed }) => [styles.guardarButton, pressed && { opacity: 0.8 }]}
+        style={({ pressed }) => [styles.guardarButton, pressed && { opacity: 0.85 }]}
         onPress={handleGuardar}
         disabled={loading}
       >
         {loading ? (
-          <ActivityIndicator color="white" />
+          <ActivityIndicator color={colors.textWhite} />
         ) : (
           <View style={styles.guardarRow}>
-            <FontAwesome name="save" size={18} color="white" style={{ marginRight: 8 }} />
+            <FontAwesome name="save" size={16} color={colors.textWhite} style={{ marginRight: spacing.sm }} />
             <Text style={styles.guardarText}>Guardar Perfil</Text>
           </View>
         )}
@@ -318,72 +312,81 @@ export default function CrearPerfilPerroScreen({ navigation, onCompletado, onLog
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000',
+    backgroundColor: colors.bg,
   },
   content: {
-    padding: 24,
+    padding: spacing.xxl,
     paddingBottom: 40,
   },
   title: {
     fontSize: 24,
-    fontWeight: 'bold',
-    color: '#34C759',
+    fontWeight: '800',
+    color: colors.primary,
     textAlign: 'center',
-    marginTop: 40,
+    marginTop: 8,
     marginBottom: 4,
+    letterSpacing: 0.5,
   },
   subtitle: {
     fontSize: 14,
-    color: '#888',
+    color: colors.textLight,
     textAlign: 'center',
     marginBottom: 28,
+    fontWeight: '500',
   },
   fotoButton: {
     alignSelf: 'center',
-    backgroundColor: '#1C1C1C',
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: '#333',
+    backgroundColor: colors.bgCard,
+    borderRadius: radius.xl,
+    borderWidth: 2,
+    borderColor: colors.border,
     borderStyle: 'dashed',
-    width: 140,
-    height: 140,
+    width: 150,
+    height: 150,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 28,
+    ...shadows.sm,
   },
-  fotoText: {
-    color: '#34C759',
-    fontSize: 13,
-    fontWeight: '600',
-    marginTop: 6,
-  },
-  fotoHint: {
-    color: '#555',
-    fontSize: 10,
-    marginTop: 2,
+  fotoPlaceholderIcon: {
+    width: 72,
+    height: 72,
+    borderRadius: radius.full,
+    backgroundColor: colors.borderLight,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: spacing.sm,
   },
   fotoPreview: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    marginBottom: 8,
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    resizeMode: 'cover',
+    marginBottom: spacing.sm,
+  },
+  fotoText: {
+    color: colors.primary,
+    fontSize: 13,
+    fontWeight: '700',
   },
   label: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#fff',
-    marginBottom: 8,
-    marginTop: 4,
+    fontSize: 12,
+    fontWeight: '700',
+    color: colors.accentDark,
+    textTransform: 'uppercase',
+    letterSpacing: 1.5,
+    marginBottom: spacing.sm,
+    marginTop: spacing.xs,
   },
   input: {
-    backgroundColor: '#1C1C1C',
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: '#333',
-    padding: 14,
-    color: '#fff',
+    backgroundColor: colors.bgInput,
+    borderRadius: radius.md,
+    borderWidth: 1.5,
+    borderColor: colors.border,
+    padding: spacing.md,
+    color: colors.text,
     fontSize: 15,
-    marginBottom: 16,
+    marginBottom: spacing.lg,
   },
   textArea: {
     height: 80,
@@ -391,125 +394,131 @@ const styles = StyleSheet.create({
   },
   sexRow: {
     flexDirection: 'row',
-    gap: 12,
-    marginBottom: 16,
+    gap: spacing.md,
+    marginBottom: spacing.lg,
   },
   sexButton: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#1C1C1C',
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: '#333',
-    padding: 14,
-    gap: 8,
+    backgroundColor: colors.bgCard,
+    borderRadius: radius.md,
+    borderWidth: 1.5,
+    borderColor: colors.border,
+    padding: spacing.md,
+    gap: spacing.sm,
   },
   sexSelected: {
-    borderColor: '#34C759',
-    backgroundColor: '#1A2E1A',
+    borderColor: colors.primary,
+    backgroundColor: '#FFF0E8',
   },
   sexText: {
-    color: '#666',
+    color: colors.textMuted,
     fontSize: 15,
     fontWeight: '600',
   },
   sexTextSelected: {
-    color: '#34C759',
+    color: colors.primary,
+    fontWeight: '700',
   },
   switchRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: '#1C1C1C',
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: '#333',
-    padding: 14,
-    marginBottom: 16,
+    backgroundColor: colors.bgCard,
+    borderRadius: radius.md,
+    borderWidth: 1.5,
+    borderColor: colors.border,
+    padding: spacing.md,
+    marginBottom: spacing.lg,
   },
   switchLabel: {
-    color: '#fff',
+    color: colors.text,
     fontSize: 15,
+    fontWeight: '500',
   },
   propositoGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 10,
-    marginBottom: 16,
+    gap: spacing.md,
+    marginBottom: spacing.lg,
   },
   propositoCard: {
     width: '47%',
-    backgroundColor: '#1C1C1C',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#333',
-    padding: 16,
+    backgroundColor: colors.bgCard,
+    borderRadius: radius.md,
+    borderWidth: 1.5,
+    borderColor: colors.border,
+    padding: spacing.lg,
     alignItems: 'center',
-    gap: 8,
+    gap: spacing.sm,
   },
   propositoSelected: {
-    borderColor: '#34C759',
-    backgroundColor: '#1A2E1A',
+    borderColor: colors.primary,
+    backgroundColor: '#FFF0E8',
   },
   propositoText: {
-    color: '#666',
+    color: colors.textMuted,
     fontSize: 13,
     fontWeight: '600',
   },
   propositoTextSelected: {
-    color: '#34C759',
+    color: colors.primary,
+    fontWeight: '700',
   },
   locationButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#1C1C1C',
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: '#333',
-    padding: 14,
-    gap: 8,
+    backgroundColor: colors.bgCard,
+    borderRadius: radius.md,
+    borderWidth: 1.5,
+    borderColor: colors.border,
+    padding: spacing.md,
+    gap: spacing.sm,
     marginBottom: 24,
   },
   locationSet: {
-    borderColor: '#34C759',
+    borderColor: colors.primary,
   },
   locationText: {
-    color: '#888',
+    color: colors.textMuted,
     fontSize: 14,
+    fontWeight: '500',
   },
   locationTextSet: {
-    color: '#34C759',
+    color: colors.primary,
+    fontWeight: '700',
   },
   headerRow: {
     flexDirection: 'row',
     justifyContent: 'flex-end',
-    marginTop: 40,
-    marginBottom: 8,
+    marginTop: 8,
+    marginBottom: spacing.sm,
   },
   logoutBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1C1C1C',
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 8,
+    backgroundColor: colors.bgCard,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderRadius: radius.sm,
     borderWidth: 1,
-    borderColor: '#333',
-    gap: 6,
+    borderColor: colors.border,
+    gap: spacing.xs,
   },
   logoutBtnText: {
-    color: '#FF3B30',
+    color: colors.error,
     fontSize: 13,
     fontWeight: '600',
   },
   guardarButton: {
-    backgroundColor: '#34C759',
-    padding: 16,
-    borderRadius: 12,
+    backgroundColor: colors.primary,
+    padding: spacing.lg,
+    borderRadius: radius.lg,
     alignItems: 'center',
+    ...shadows.sm,
   },
   guardarRow: {
     flexDirection: 'row',
@@ -517,8 +526,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   guardarText: {
-    color: 'white',
+    color: colors.textWhite,
     fontSize: 16,
-    fontWeight: 'bold',
+    fontWeight: '700',
   },
 });

@@ -12,13 +12,18 @@ class RegistrarUsuario {
   }
 
   async execute({ nombre, email, password, telefono, ciudad }) {
-    // 1. Validar que el email no esté registrado
+    // 1. Validar password antes de hashear
+    if (!password || password.length < 6) {
+      throw new Usuario.AppError('La contraseña debe tener al menos 6 caracteres', 400);
+    }
+
+    // 2. Validar que el email no esté registrado
     const existente = await this.usuarioRepository.findByEmail(email);
     if (existente) {
       throw new Usuario.AppError('El email ya está registrado', 409);
     }
 
-    // 2. Hashear la contraseña
+    // 3. Hashear la contraseña
     const passwordHash = await this.authService.hashPassword(password);
 
     // 3. Crear la entidad Usuario (valida internamente)

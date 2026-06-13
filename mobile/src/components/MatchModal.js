@@ -1,11 +1,10 @@
-// MatchModal — Modal animado de "¡Es un Match!"
-// Capa: entry-points/mobile/components
-
+// MatchModal — Modal animado de "¡Es un Match!" (TinderCanino)
 import React, { useEffect, useRef } from 'react';
 import {
   View, Text, Pressable, StyleSheet, Animated, Dimensions, Image
 } from 'react-native';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
+import { colors, spacing, radius, shadows } from '../styles/theme';
 
 const { width } = Dimensions.get('window');
 
@@ -45,11 +44,13 @@ export default function MatchModal({ visible, matchData, onCerrar, onAbrirChat }
 
         {/* Botón cerrar */}
         <Pressable style={styles.closeBtn} onPress={onCerrar}>
-          <MaterialIcons name="close" size={24} color="#fff" />
+          <MaterialIcons name="close" size={24} color={colors.text} />
         </Pressable>
 
         {/* Icono */}
-        <MaterialIcons name="pets" size={48} color="#34C759" style={styles.icon} />
+        <View style={styles.heartIconContainer}>
+          <MaterialIcons name="pets" size={44} color={colors.primary} />
+        </View>
 
         {/* Título */}
         <Text style={styles.title}>¡Es un Match! 🎉</Text>
@@ -58,26 +59,22 @@ export default function MatchModal({ visible, matchData, onCerrar, onAbrirChat }
         <View style={styles.photosRow}>
           <View style={styles.photoBox}>
             {perroUsuario.fotoPrincipal ? (
-              <Image
-                source={{ uri: perroUsuario.fotoPrincipal }}
-                style={styles.photo}
-              />
+              <Image source={{ uri: perroUsuario.fotoPrincipal }} style={styles.photo} />
             ) : (
-              <MaterialIcons name="pets" size={40} color="#555" />
+              <MaterialIcons name="pets" size={36} color={colors.textMuted} />
             )}
             <Text style={styles.photoLabel}>Tú</Text>
           </View>
 
-          <MaterialIcons name="favorite" size={28} color="#34C759" style={styles.heartIcon} />
+          <View style={styles.heartBadge}>
+            <MaterialIcons name="favorite" size={24} color={colors.primary} />
+          </View>
 
           <View style={styles.photoBox}>
             {perroMatch.fotoPrincipal ? (
-              <Image
-                source={{ uri: perroMatch.fotoPrincipal }}
-                style={styles.photo}
-              />
+              <Image source={{ uri: perroMatch.fotoPrincipal }} style={styles.photo} />
             ) : (
-              <MaterialIcons name="pets" size={40} color="#555" />
+              <MaterialIcons name="pets" size={36} color={colors.textMuted} />
             )}
             <Text style={styles.photoLabel}>{perroMatch.nombre || 'Match'}</Text>
           </View>
@@ -89,8 +86,11 @@ export default function MatchModal({ visible, matchData, onCerrar, onAbrirChat }
         </Text>
 
         {/* Botones */}
-        <Pressable style={styles.chatBtn} onPress={onAbrirChat}>
-          <MaterialIcons name="chat" size={18} color="#000" />
+        <Pressable
+          style={({ pressed }) => [styles.chatBtn, pressed && { opacity: 0.85 }]}
+          onPress={onAbrirChat}
+        >
+          <MaterialIcons name="chat" size={18} color={colors.textWhite} />
           <Text style={styles.chatBtnText}>Enviar mensaje</Text>
         </Pressable>
 
@@ -106,52 +106,60 @@ export default function MatchModal({ visible, matchData, onCerrar, onAbrirChat }
 const styles = StyleSheet.create({
   overlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0,0,0,0.7)',
+    backgroundColor: 'rgba(61, 43, 26, 0.7)',
     justifyContent: 'center',
     alignItems: 'center',
     zIndex: 999,
   },
   card: {
     width: width * 0.85,
-    backgroundColor: '#1C1C1C',
-    borderRadius: 24,
-    padding: 32,
+    backgroundColor: colors.bgCard,
+    borderRadius: radius.xl,
+    padding: spacing.xxl,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#333',
+    borderColor: colors.border,
+    ...shadows.lg,
   },
   closeBtn: {
     position: 'absolute',
     top: 12,
     right: 12,
-    padding: 8,
+    padding: spacing.sm,
     zIndex: 10,
   },
-  icon: {
-    marginBottom: 8,
+  heartIconContainer: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    backgroundColor: '#FFF0E8',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: spacing.md,
   },
   title: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: '#34C759',
+    fontSize: 26,
+    fontWeight: '800',
+    color: colors.primary,
     marginBottom: 20,
     textAlign: 'center',
+    letterSpacing: 0.5,
   },
   photosRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: spacing.lg,
   },
   photoBox: {
     width: 80,
     height: 80,
-    borderRadius: 40,
-    backgroundColor: '#2A2A2A',
+    borderRadius: radius.full,
+    backgroundColor: colors.bgInput,
     justifyContent: 'center',
     alignItems: 'center',
     overflow: 'hidden',
     borderWidth: 3,
-    borderColor: '#34C759',
+    borderColor: colors.primary,
   },
   photo: {
     width: 80,
@@ -159,45 +167,48 @@ const styles = StyleSheet.create({
     borderRadius: 40,
     resizeMode: 'cover',
   },
-  heartIcon: {
-    marginHorizontal: 12,
+  heartBadge: {
+    marginHorizontal: spacing.md,
   },
   photoLabel: {
-    color: '#34C759',
+    color: colors.primary,
     fontSize: 11,
-    fontWeight: '600',
-    marginTop: 4,
+    fontWeight: '700',
+    marginTop: spacing.xs,
     textAlign: 'center',
+    letterSpacing: 0.5,
   },
   subtitle: {
-    color: '#888',
+    color: colors.textLight,
     fontSize: 14,
     textAlign: 'center',
-    marginBottom: 24,
+    marginBottom: spacing.xxl,
     lineHeight: 20,
   },
   chatBtn: {
-    backgroundColor: '#34C759',
+    backgroundColor: colors.primary,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 14,
+    paddingVertical: spacing.md,
     paddingHorizontal: 28,
-    borderRadius: 28,
+    borderRadius: radius.full,
     width: '100%',
-    marginBottom: 12,
-    gap: 6,
+    marginBottom: spacing.md,
+    gap: spacing.sm,
+    ...shadows.sm,
   },
   chatBtnText: {
-    color: '#000',
+    color: colors.textWhite,
     fontSize: 16,
-    fontWeight: 'bold',
+    fontWeight: '700',
   },
   seguirBtn: {
-    paddingVertical: 10,
+    paddingVertical: spacing.sm,
   },
   seguirBtnText: {
-    color: '#888',
+    color: colors.textMuted,
     fontSize: 14,
+    fontWeight: '600',
   },
 });

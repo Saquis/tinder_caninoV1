@@ -3,6 +3,7 @@ import { createStackNavigator } from '@react-navigation/stack';
 import LoginScreen from '../screens/LoginScreen';
 import RegisterScreen from '../screens/RegisterScreen';
 import CrearPerfilPerroScreen from '../screens/CrearPerfilPerroScreen';
+import { colors } from '../styles/theme';
 
 const Stack = createStackNavigator();
 
@@ -52,8 +53,8 @@ export default function AuthNavigator({ onLogin, forceScreen, onLogout }) {
             headerShown: true,
             headerTitle: '',
             headerBackTitle: 'Volver',
-            headerStyle: { backgroundColor: '#000' },
-            headerTintColor: '#34C759',
+            headerStyle: { backgroundColor: colors.bgCard },
+            headerTintColor: colors.primary,
           }}
         />
         <Stack.Screen
@@ -62,8 +63,8 @@ export default function AuthNavigator({ onLogin, forceScreen, onLogout }) {
           options={{
             headerShown: true,
             headerTitle: 'Tu perro',
-            headerStyle: { backgroundColor: '#000' },
-            headerTintColor: '#34C759',
+            headerStyle: { backgroundColor: colors.bgCard },
+            headerTintColor: colors.primary,
             headerLeft: () => null,
           }}
         />

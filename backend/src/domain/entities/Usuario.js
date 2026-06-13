@@ -37,9 +37,8 @@ class Usuario {
     if (!Usuario.esEmailValido(email)) {
       throw new AppError('Email inválido', 400);
     }
-    if (!this.esPasswordValida) {
-      throw new AppError('La contraseña debe tener al menos 6 caracteres', 400);
-    }
+    // Password validation se hace en el use case antes de hashear
+    // (el hash de bcrypt siempre tiene 60 chars, no se puede validar aquí)
 
     return new Usuario({
       nombre: nombre.trim(),

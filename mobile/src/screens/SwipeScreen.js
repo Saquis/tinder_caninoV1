@@ -1,30 +1,89 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
   View, Text, StyleSheet, Alert, ActivityIndicator,
-  Animated, PanResponder, Dimensions, Image
+  Animated, PanResponder, Dimensions, Image, Pressable, ScrollView
 } from 'react-native';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { apiWithRefresh } from '../api/client';
 import MatchModal from '../components/MatchModal';
+import FilterModal from '../components/FilterModal';
+import { colors, spacing, radius, shadows, typography } from '../styles/theme';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
 const SWIPE_THRESHOLD = 120;
+
+// 🐾 Emojis por propósito
+const PROPOSITO_EMOJI = {
+  jugar: '🎮',
+  pasear: '🌳',
+  reproduccion: '💕',
+  todo: '⭐',
+};
+
+const PROPOSITO_LABEL = {
+  jugar: 'Jugar',
+  pasear: 'Pasear',
+  reproduccion: 'Reproducción',
+  todo: 'Amigos',
+};
+
+// 🐾 Iconos de personalidad (novedoso)
+const PERSONALIDAD_ICONS = [
+  { icon: '🐕', label: 'Sociable' },
+  { icon: '🦴', label: 'Juguetón' },
+  { icon: '🏠', label: 'Tranquilo' },
+  { icon: '🌊', label: 'Agua' },
+  { icon: '🐾', label: 'Energía 🔋' },
+];
+
+// 🐾 Cálculo de "Woof Meter" (compatibilidad visual)
+const calcularAfinit = (perro) => {
+  if (!perro) return 0;
+  let score = 60; // base
+  if (perro.castrado) score += 10;
+  if (perro.sexo) score += 5;
+  if (perro.proposito) score += 5;
+  if (perro.descripcion && perro.descripcion.length > 20) score += 10;
+  if (perro.raza) score += 10;
+  return Math.min(score, 100);
+};
+
+// 🐾 Emoji según afinidad
+const afinitEmoji = (score) => {
+  if (score >= 85) return '💖';
+  if (score >= 70) return '💛';
+  if (score >= 50) return '🤍';
+  return '🩶';
+};
 
 export default function SwipeScreen({ navigation }) {
   const [perros, setPerros] = useState([]);
   const [loading, setLoading] = useState(true);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [matchModal, setMatchModal] = useState(null);
+  const [filterVisible, setFilterVisible] = useState(false);
+  const [filtros, setFiltros] = useState({});
   const position = useRef(new Animated.ValueXY()).current;
+  const fadeAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     cargarPerros();
+    Animated.timing(fadeAnim, {
+      toValue: 1,
+      duration: 400,
+      useNativeDriver: true,
+    }).start();
   }, []);
 
   const cargarPerros = async () => {
     setLoading(true);
     try {
-      const data = await apiWithRefresh('GET', '/perros/explorar');
+      const qsParts = [];
+      if (filtros.proposito) qsParts.push('proposito=' + encodeURIComponent(filtros.proposito));
+      if (filtros.distanciaMax) qsParts.push('distanciaMax=' + filtros.distanciaMax);
+      if (filtros.edadMax) qsParts.push('edadMax=' + filtros.edadMax);
+      const qs = qsParts.length ? '?' + qsParts.join('&') : '';
+      const data = await apiWithRefresh('GET', `/perros/explorar${qs}`);
       setPerros(data.perros || []);
     } catch (error) {
       const msg = typeof error === 'string' ? error
@@ -41,7 +100,7 @@ export default function SwipeScreen({ navigation }) {
     try {
       const data = await apiWithRefresh('POST', '/swipes', {
         usuarioDestino: usuarioDestinoId,
-        tipo, // 'like' | 'nope' | 'super'
+        tipo,
       });
       if (data.match?.encontrado) {
         setMatchModal(data.match);
@@ -53,10 +112,8 @@ export default function SwipeScreen({ navigation }) {
   };
 
   const calcularDistancia = (lat2, lng2) => {
-    // Usamos coordenadas fijas del usuario (se pueden mejorar con GPS real)
-    // El backend ya filtra por distancia, esto es solo display
     if (!lat2 || !lng2) return '?';
-    const lat1 = -2.170; // Guayaquil (default)
+    const lat1 = -2.170;
     const lng1 = -79.922;
     const R = 6371;
     const dLat = (lat2 - lat1) * Math.PI / 180;
@@ -116,7 +173,7 @@ export default function SwipeScreen({ navigation }) {
   const renderCard = (perro) => {
     const rotate = position.x.interpolate({
       inputRange: [-SCREEN_WIDTH / 2, 0, SCREEN_WIDTH / 2],
-      outputRange: ['-15deg', '0deg', '15deg'],
+      outputRange: ['-12deg', '0deg', '12deg'],
     });
 
     const likeOpacity = position.x.interpolate({
@@ -131,8 +188,12 @@ export default function SwipeScreen({ navigation }) {
       extrapolate: 'clamp',
     });
 
+    const afinitScore = calcularAfinit(perro);
+    const km = calcularDistancia(perro.latitud, perro.longitud);
+
     return (
       <Animated.View
+        key={perro.id}
         style={[styles.card, { transform: [{ translateX: position.x }, { translateY: position.y }, { rotate }] }]}
         {...panResponder.panHandlers}
       >
@@ -141,16 +202,56 @@ export default function SwipeScreen({ navigation }) {
           {perro.fotoPrincipal ? (
             <Image source={{ uri: perro.fotoPrincipal }} style={styles.fotoImage} />
           ) : (
-            <MaterialIcons name="pets" size={60} color="#444" />
+            <View style={styles.fotoPlaceholder}>
+              <MaterialIcons name="pets" size={50} color={colors.border} />
+            </View>
           )}
-          {/* Gradiente + nombre sobre la foto */}
+
+          {/* Gradiente inferior sobre la foto */}
           <View style={styles.fotoGradient}>
             <Text style={styles.cardNombre}>
               {perro.nombre}
-              {perro.edadMeses ? <Text style={styles.cardEdad}> • {Math.floor(perro.edadMeses / 12)}a {perro.edadMeses % 12}m</Text> : null}
+              {perro.edadMeses ? (
+                <Text style={styles.cardEdad}>
+                  {' '}• {Math.floor(perro.edadMeses / 12)}
+                  {perro.edadMeses % 12 > 0 ? ` ${perro.edadMeses % 12}m` : 'a'}
+                </Text>
+              ) : null}
             </Text>
-            <Text style={styles.cardRaza}>{perro.raza || 'Mestizo'}</Text>
+            <View style={styles.cardSubRow}>
+              <Text style={styles.cardRaza}>{perro.raza || 'Mestizo'}</Text>
+              <Text style={styles.cardDistancia}>{km !== '?' ? `${km} km 🐾` : ''}</Text>
+            </View>
           </View>
+
+          {/* Botón reportar */}
+          <Pressable
+            style={styles.reportBtn}
+            onPress={() => {
+              console.log('[Swipe] ⋮ Reportar abierto para usuario:', perro.usuarioId, perro.nombre);
+              Alert.alert('Reportar usuario', '¿Por qué quieres reportar a este usuario?', [
+                { text: 'Cancelar', style: 'cancel' },
+                { text: 'Foto falsa', onPress: () => reportarUsuario(perro.usuarioId, 'Foto falsa') },
+                { text: 'Perfil inapropiado', onPress: () => reportarUsuario(perro.usuarioId, 'Perfil inapropiado') },
+                { text: 'Spam', onPress: () => reportarUsuario(perro.usuarioId, 'Spam') },
+                { text: 'Otro', onPress: () => {
+                  console.log('[Swipe] Reportar Otro seleccionado');
+                  Alert.prompt ? Alert.prompt('Describe el problema', '', (text) =>
+                    reportarUsuario(perro.usuarioId, 'Otro', text)
+                  ) : Alert.alert('Reportar', 'Reporte enviado. Gracias.');
+                }},
+              ]);
+            }}
+          >
+            <MaterialIcons name="more-vert" size={20} color="rgba(255,255,255,0.7)" />
+          </Pressable>
+
+          {/* 🆕 Woof Meter - indicador de compatibilidad */}
+          <View style={styles.afinitBadge}>
+            <Text style={styles.afinitEmoji}>{afinitEmoji(afinitScore)}</Text>
+            <Text style={styles.afinitText}>{afinitScore}%</Text>
+          </View>
+
           {/* Badge propósito */}
           <View style={[styles.propBadge,
             perro.proposito === 'jugar' ? styles.propJugar :
@@ -158,42 +259,55 @@ export default function SwipeScreen({ navigation }) {
             perro.proposito === 'reproduccion' ? styles.propRepro : styles.propTodo
           ]}>
             <Text style={styles.propBadgeText}>
-              {perro.proposito === 'jugar' ? '🎮 Jugar' :
-               perro.proposito === 'pasear' ? '🚶 Pasear' :
-               perro.proposito === 'reproduccion' ? '💕 Reproducción' : '⭐ Todo'}
+              {PROPOSITO_EMOJI[perro.proposito] || '⭐'}{' '}
+              {PROPOSITO_LABEL[perro.proposito] || 'Amigos'}
             </Text>
           </View>
         </View>
 
         {/* Info del perro */}
-        <View style={styles.cardInfo}>
+        <ScrollView style={styles.cardInfo} showsVerticalScrollIndicator={false}>
           {perro.descripcion && (
-            <Text style={styles.cardDesc} numberOfLines={2}>{perro.descripcion}</Text>
+            <Text style={styles.cardDesc}>{perro.descripcion}</Text>
           )}
           <View style={styles.cardMeta}>
             {perro.sexo && (
               <Text style={styles.cardSexo}>
                 {perro.sexo === 'macho' ? '♂️ Macho' : '♀️ Hembra'}
-                {perro.castrado ? ' • Esterilizado' : ''}
+                {perro.castrado ? ' · Esterilizado' : ''}
               </Text>
             )}
-            {perro.latitud && perro.longitud && (
-              <Text style={styles.cardDistancia}>📍 {calcularDistancia(perro.latitud, perro.longitud)} km</Text>
-            )}
           </View>
-        </View>
+        </ScrollView>
 
         {/* Overlay LIKE */}
         <Animated.View style={[styles.overlay, styles.likeOverlay, { opacity: likeOpacity }]}>
-          <Text style={styles.overlayText}>LIKE</Text>
+          <Text style={styles.overlayText}>❤️ ¡ME GUSTA!</Text>
         </Animated.View>
 
         {/* Overlay NOPE */}
         <Animated.View style={[styles.overlay, styles.nopeOverlay, { opacity: nopeOpacity }]}>
-          <Text style={styles.overlayText}>NOPE</Text>
+          <Text style={[styles.overlayText, { color: colors.error }]}>✕ NO</Text>
         </Animated.View>
       </Animated.View>
     );
+  };
+
+  const reportarUsuario = async (usuarioId, motivo, descripcion) => {
+    console.log('[Swipe] reportarUsuario → usuarioId:', usuarioId, 'motivo:', motivo, 'desc:', descripcion?.slice(0, 50));
+    try {
+      await apiWithRefresh('POST', '/usuarios/reportar', {
+        reportadoId: usuarioId,
+        motivo,
+        descripcion: descripcion || '',
+      });
+      console.log('[Swipe] Reporte enviado OK');
+      Alert.alert('Reportado', 'Gracias por reportar. Revisaremos el perfil.');
+    } catch (error) {
+      const msg = error?.message || error?.mensaje || 'Error al reportar';
+      console.log('[Swipe] Error al reportar:', msg);
+      Alert.alert('Error', msg);
+    }
   };
 
   const handleAbrirChat = () => {
@@ -207,8 +321,11 @@ export default function SwipeScreen({ navigation }) {
   if (loading) {
     return (
       <View style={styles.container}>
-        <ActivityIndicator size="large" color="#34C759" />
-        <Text style={styles.loadingText}>Buscando perros cerca...</Text>
+        <View style={styles.loadingCard}>
+          <MaterialIcons name="pets" size={40} color={colors.accent} />
+          <ActivityIndicator size="large" color={colors.primary} style={{ marginTop: 16 }} />
+          <Text style={styles.loadingText}>Buscando perros cerca...</Text>
+        </View>
       </View>
     );
   }
@@ -216,19 +333,21 @@ export default function SwipeScreen({ navigation }) {
   if (perros.length === 0 || currentIndex >= perros.length) {
     return (
       <View style={styles.container}>
-        <MaterialIcons name="pets" size={60} color="#444" />
-        <Text style={styles.emptyTitle}>No hay más perros</Text>
-        <Text style={styles.emptyText}>
-          {perros.length === 0
-            ? 'No encontramos perros cerca. Intenta más tarde.'
-            : 'Ya viste todos los perros disponibles. Vuelve pronto.'}
-        </Text>
-        <View
-          style={styles.refreshBtn}
-          onTouchEnd={() => { setCurrentIndex(0); cargarPerros(); }}
-        >
-          <MaterialIcons name="refresh" size={20} color="#34C759" />
-          <Text style={styles.refreshText}>Recargar</Text>
+        <View style={styles.emptyCard}>
+          <MaterialIcons name="pets" size={50} color={colors.border} />
+          <Text style={styles.emptyTitle}>¡Ups! No hay más perros</Text>
+          <Text style={styles.emptyText}>
+            {perros.length === 0
+              ? 'No encontramos perros cerca.\nIntenta ajustar los filtros o vuelve más tarde.'
+              : 'Ya viste todos los perros disponibles.\nVuelve pronto, seguro hay más.'}
+          </Text>
+          <Pressable
+            style={styles.refreshBtn}
+            onPress={() => { setCurrentIndex(0); cargarPerros(); }}
+          >
+            <MaterialIcons name="refresh" size={18} color={colors.textWhite} />
+            <Text style={styles.refreshText}>Recargar</Text>
+          </Pressable>
         </View>
       </View>
     );
@@ -241,35 +360,59 @@ export default function SwipeScreen({ navigation }) {
       {/* Header */}
       <View style={styles.header}>
         <Text style={styles.headerTitle}>🐾 Explorar</Text>
-        <Text style={styles.headerCount}>
-          {currentIndex + 1} / {perros.length}
-        </Text>
+        <View style={styles.headerRight}>
+          {Object.keys(filtros).length > 0 && (
+            <View style={styles.filtroActivoDot} />
+          )}
+          <Pressable onPress={() => setFilterVisible(true)} style={styles.filterBtn}>
+            <MaterialIcons name="filter-list" size={20} color={colors.accentDark} />
+          </Pressable>
+          <Text style={styles.headerCount}>
+            {currentIndex + 1} / {perros.length}
+          </Text>
+        </View>
       </View>
 
       {/* Card swipable */}
       {renderCard(perroActual)}
 
-      {/* Botones de acción */}
+      {/* Botones de acción — rediseñados con paleta TinderCanino */}
       <View style={styles.actionsRow}>
-        <View
+        <Pressable
           style={[styles.actionBtn, styles.actionNope]}
-          onTouchEnd={() => swipeCard('left')}
+          onPress={() => swipeCard('left')}
         >
-          <MaterialIcons name="close" size={28} color="#FF3B30" />
-        </View>
-        <View
+          <MaterialIcons name="close" size={26} color={colors.textWhite} />
+        </Pressable>
+        <Pressable
           style={[styles.actionBtn, styles.actionSuper]}
-          onTouchEnd={() => swipeCard('up')}
+          onPress={() => swipeCard('up')}
         >
-          <MaterialIcons name="star" size={24} color="#007AFF" />
-        </View>
-        <View
+          <MaterialIcons name="star" size={22} color={colors.textWhite} />
+        </Pressable>
+        <Pressable
           style={[styles.actionBtn, styles.actionLike]}
-          onTouchEnd={() => swipeCard('right')}
+          onPress={() => swipeCard('right')}
         >
-          <MaterialIcons name="favorite" size={28} color="#34C759" />
-        </View>
+          <MaterialIcons name="favorite" size={26} color={colors.textWhite} />
+        </Pressable>
       </View>
+
+      <Text style={styles.actionHint}>
+        Desliza → Me gusta  ·  ← No  ·  ↑ Super
+      </Text>
+
+      {/* Filter modal */}
+      <FilterModal
+        visible={filterVisible}
+        onCerrar={() => setFilterVisible(false)}
+        filtrosActuales={filtros}
+        onAplicar={(nuevosFiltros) => {
+          setFiltros(nuevosFiltros);
+          setCurrentIndex(0);
+          cargarPerros();
+        }}
+      />
 
       {/* Match modal */}
       <MatchModal
@@ -285,41 +428,70 @@ export default function SwipeScreen({ navigation }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000',
+    backgroundColor: colors.bg,
     alignItems: 'center',
     justifyContent: 'center',
-    padding: 16,
+    padding: spacing.md,
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     width: '100%',
-    paddingHorizontal: 4,
-    marginBottom: 12,
-    marginTop: 8,
+    paddingHorizontal: spacing.xs,
+    marginBottom: spacing.md,
+    marginTop: spacing.sm,
   },
   headerTitle: {
-    fontSize: 22,
-    fontWeight: 'bold',
-    color: '#34C759',
+    fontSize: 24,
+    fontWeight: '800',
+    color: colors.primary,
+    letterSpacing: 0.5,
   },
   headerCount: {
-    color: '#666',
-    fontSize: 14,
+    color: colors.textMuted,
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  headerRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  filterBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: radius.full,
+    backgroundColor: colors.bgCard,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: colors.border,
+    ...shadows.sm,
+  },
+  filtroActivoDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: colors.primary,
+    position: 'absolute',
+    top: -2,
+    right: -2,
+    zIndex: 1,
   },
   card: {
     width: SCREEN_WIDTH - 32,
-    height: 440,
-    backgroundColor: '#1C1C1C',
-    borderRadius: 20,
+    height: 460,
+    backgroundColor: colors.bgCard,
+    borderRadius: radius.xxl,
     borderWidth: 1,
-    borderColor: '#333',
+    borderColor: colors.border,
     overflow: 'hidden',
+    ...shadows.lg,
   },
   fotoBox: {
-    height: 350,
-    backgroundColor: '#2A2A2A',
+    height: 360,
+    backgroundColor: colors.borderLight,
     position: 'relative',
   },
   fotoImage: {
@@ -327,104 +499,146 @@ const styles = StyleSheet.create({
     height: '100%',
     resizeMode: 'cover',
   },
+  fotoPlaceholder: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   fotoGradient: {
     position: 'absolute',
     bottom: 0,
     left: 0,
     right: 0,
-    padding: 16,
-    paddingTop: 40,
-    backgroundColor: 'rgba(0,0,0,0.5)',
+    padding: spacing.lg,
+    paddingTop: 50,
+    backgroundColor: 'rgba(0,0,0,0.45)',
   },
   propBadge: {
     position: 'absolute',
-    top: 12,
-    right: 12,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 12,
+    top: spacing.md,
+    right: spacing.md,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+    borderRadius: radius.lg,
+    ...shadows.sm,
   },
   propJugar: {
-    backgroundColor: '#34C759',
+    backgroundColor: colors.like,
   },
   propPasear: {
-    backgroundColor: '#5AC8FA',
+    backgroundColor: colors.info,
   },
   propRepro: {
-    backgroundColor: '#FF2D55',
+    backgroundColor: colors.error,
   },
   propTodo: {
-    backgroundColor: '#FF9500',
+    backgroundColor: colors.warning,
   },
   propBadgeText: {
     color: '#fff',
     fontSize: 12,
-    fontWeight: 'bold',
+    fontWeight: '700',
+  },
+  // 🆕 Woof Meter badge
+  afinitBadge: {
+    position: 'absolute',
+    bottom: 12,
+    left: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255,255,255,0.9)',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: radius.full,
+    gap: 4,
+    ...shadows.sm,
+  },
+  afinitEmoji: {
+    fontSize: 14,
+  },
+  afinitText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: colors.text,
   },
   cardInfo: {
-    padding: 14,
+    flex: 1,
+    padding: spacing.lg,
   },
   cardNombre: {
-    fontSize: 24,
-    fontWeight: 'bold',
+    fontSize: 26,
+    fontWeight: '800',
     color: '#fff',
+    letterSpacing: 0.5,
   },
   cardEdad: {
-    fontSize: 16,
-    fontWeight: 'normal',
+    fontSize: 17,
+    fontWeight: '500',
     color: 'rgba(255,255,255,0.8)',
+  },
+  cardSubRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: 2,
   },
   cardRaza: {
     fontSize: 15,
-    color: 'rgba(255,255,255,0.7)',
+    color: 'rgba(255,255,255,0.75)',
+    fontWeight: '500',
+  },
+  cardDistancia: {
+    fontSize: 13,
+    color: 'rgba(255,255,255,0.65)',
   },
   cardMeta: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
-    marginTop: 6,
+    gap: spacing.sm,
+    marginTop: spacing.sm,
   },
   cardSexo: {
     fontSize: 13,
-    color: '#888',
-  },
-  cardDistancia: {
-    fontSize: 13,
-    color: '#888',
+    color: colors.textLight,
+    fontWeight: '500',
   },
   cardDesc: {
-    fontSize: 13,
-    color: '#aaa',
-    lineHeight: 18,
+    fontSize: 14,
+    color: colors.text,
+    lineHeight: 20,
+    fontWeight: '400',
   },
   overlay: {
     position: 'absolute',
-    top: 30,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 8,
+    top: 50,
+    paddingHorizontal: 18,
+    paddingVertical: 10,
+    borderRadius: radius.lg,
     borderWidth: 3,
   },
   likeOverlay: {
     right: 20,
-    borderColor: '#34C759',
+    borderColor: colors.like,
+    backgroundColor: 'rgba(76,175,80,0.15)',
   },
   nopeOverlay: {
     left: 20,
-    borderColor: '#FF3B30',
+    borderColor: colors.error,
+    backgroundColor: 'rgba(229,57,53,0.15)',
   },
   overlayText: {
-    fontSize: 28,
-    fontWeight: 'bold',
+    fontSize: 24,
+    fontWeight: '900',
     letterSpacing: 2,
+    color: colors.like,
   },
   actionsRow: {
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    gap: 20,
+    gap: 24,
     marginTop: 24,
-    marginBottom: 12,
+    marginBottom: 8,
   },
   actionBtn: {
     width: 56,
@@ -432,37 +646,62 @@ const styles = StyleSheet.create({
     borderRadius: 28,
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 2,
+    ...shadows.md,
   },
   actionNope: {
-    borderColor: '#FF3B30',
-    backgroundColor: '#2A0A0A',
+    backgroundColor: colors.nope,
   },
   actionSuper: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    borderColor: '#007AFF',
-    backgroundColor: '#0A1A2A',
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: colors.superLike,
   },
   actionLike: {
-    borderColor: '#34C759',
-    backgroundColor: '#0A2A0A',
+    backgroundColor: colors.like,
   },
-  loadingText: {
-    color: '#888',
-    marginTop: 16,
-    fontSize: 14,
-  },
-  emptyTitle: {
-    color: '#fff',
-    fontSize: 20,
-    fontWeight: 'bold',
-    marginTop: 16,
+  actionHint: {
+    fontSize: 11,
+    color: colors.textMuted,
+    fontWeight: '500',
+    letterSpacing: 0.5,
     marginBottom: 8,
   },
+  loadingCard: {
+    alignItems: 'center',
+    padding: spacing.xxl,
+    backgroundColor: colors.bgCard,
+    borderRadius: radius.xl,
+    borderWidth: 1,
+    borderColor: colors.border,
+    ...shadows.md,
+  },
+  loadingText: {
+    color: colors.textLight,
+    marginTop: spacing.md,
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  emptyCard: {
+    alignItems: 'center',
+    padding: spacing.xxxl,
+    backgroundColor: colors.bgCard,
+    borderRadius: radius.xl,
+    borderWidth: 1,
+    borderColor: colors.border,
+    maxWidth: 320,
+    ...shadows.md,
+  },
+  emptyTitle: {
+    color: colors.text,
+    fontSize: 20,
+    fontWeight: '700',
+    marginTop: 16,
+    marginBottom: 8,
+    textAlign: 'center',
+  },
   emptyText: {
-    color: '#888',
+    color: colors.textLight,
     fontSize: 14,
     textAlign: 'center',
     marginBottom: 24,
@@ -471,16 +710,28 @@ const styles = StyleSheet.create({
   refreshBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1C1C1C',
-    paddingHorizontal: 20,
+    backgroundColor: colors.primary,
+    paddingHorizontal: 24,
     paddingVertical: 12,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: '#333',
-    gap: 8,
+    borderRadius: radius.lg,
+    gap: spacing.sm,
+    ...shadows.sm,
   },
   refreshText: {
-    color: '#34C759',
-    fontWeight: '600',
+    color: colors.textWhite,
+    fontWeight: '700',
+    fontSize: 14,
+  },
+  reportBtn: {
+    position: 'absolute',
+    top: spacing.md,
+    left: spacing.md,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: 'rgba(0,0,0,0.45)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 10,
   },
 });

@@ -1,11 +1,15 @@
 import React, { useState } from 'react';
 import {
   View, Text, TextInput, Pressable, StyleSheet, Alert,
-  ActivityIndicator, Platform
+  ActivityIndicator, ScrollView, KeyboardAvoidingView, Platform
 } from 'react-native';
-import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
-import { api, saveTokens } from '../api/client';
 import FontAwesome from 'react-native-vector-icons/FontAwesome';
+import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
+import { LinearGradient } from 'expo-linear-gradient';
+import { api } from '../api/client';
+import { colors, spacing, radius, shadows, typography } from '../styles/theme';
+
+const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[A-Za-z\d!@#$%^&*()_+]{6,}$/;
 
 export default function RegisterScreen({ navigation, onRegister }) {
   const [nombre, setNombre] = useState('');
@@ -13,25 +17,22 @@ export default function RegisterScreen({ navigation, onRegister }) {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirm, setShowConfirm] = useState(false);
-
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[A-Za-z\d!@#$%^&*()_+]{6,}$/;
+  const [showPass, setShowPass] = useState(false);
+  const [showConf, setShowConf] = useState(false);
 
   const handleRegister = async () => {
-    if (!nombre || !email || !password || !confirmPassword) {
-      Alert.alert('Error', 'Por favor completa todos los campos');
+    if (!nombre.trim() || nombre.trim().length < 2) {
+      Alert.alert('Error', 'El nombre debe tener al menos 2 caracteres');
       return;
     }
-    if (!emailRegex.test(email)) {
-      Alert.alert('Error', 'Ingresa un correo válido');
+    if (!email.trim()) {
+      Alert.alert('Error', 'El correo es obligatorio');
       return;
     }
     if (!passwordRegex.test(password)) {
       Alert.alert(
-        'Error',
-        'La contraseña debe tener al menos 6 caracteres,\nuna mayúscula, una minúscula y un número'
+        'Contraseña débil',
+        'Mínimo 6 caracteres, una mayúscula, una minúscula y un número'
       );
       return;
     }
@@ -44,18 +45,14 @@ export default function RegisterScreen({ navigation, onRegister }) {
     try {
       const data = await api('POST', '/auth/registro', {
         nombre: nombre.trim(),
-        email: email.trim(),
+        email: email.trim().toLowerCase(),
         password,
       });
-
-      await saveTokens(data.accessToken, data.refreshToken);
-      if (onRegister) await onRegister();
-
+      await onRegister(data.tienePerro !== undefined ? data.tienePerro : false);
     } catch (error) {
       const msg = typeof error === 'string' ? error
-        : error.message || error.mensaje
-        || (typeof error.error === 'string' ? error.error : error.error?.message || error.error?.mensaje)
-        || 'Error al registrarse';
+        : error?.error?.message || error?.message || error?.mensaje
+        || (typeof error?.error === 'string' ? error.error : 'Error al registrarse');
       Alert.alert('Error', msg);
     } finally {
       setLoading(false);
@@ -63,208 +60,273 @@ export default function RegisterScreen({ navigation, onRegister }) {
   };
 
   return (
-    <KeyboardAwareScrollView
-      contentContainerStyle={styles.container}
-      enableOnAndroid={true}
-      extraScrollHeight={Platform.OS === 'ios' ? 20 : 0}
-      keyboardShouldPersistTaps="handled"
+    <KeyboardAvoidingView
+      style={{ flex: 1 }}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
-      <Text style={styles.title}>Crear Cuenta</Text>
-      <Text style={styles.subtitle}>Regístrate y encuentra{'\n'}compañero para tu perro</Text>
-
-      <Text style={styles.label}>Nombre</Text>
-      <View style={styles.inputWrapper}>
-        <FontAwesome name="user" size={16} color="#777" style={styles.icon} />
-        <TextInput
-          style={styles.input}
-          placeholder="Tu nombre"
-          placeholderTextColor="#555"
-          value={nombre}
-          onChangeText={setNombre}
-          autoCapitalize="words"
+      <View style={styles.container}>
+        <LinearGradient
+          colors={[colors.gradientStart, colors.gradientMid, colors.gradientEnd]}
+          style={StyleSheet.absoluteFill}
         />
-      </View>
-
-      <Text style={styles.label}>Correo electrónico</Text>
-      <View style={styles.inputWrapper}>
-        <FontAwesome name="envelope" size={16} color="#777" style={styles.icon} />
-        <TextInput
-          style={styles.input}
-          placeholder="ejemplo@correo.com"
-          placeholderTextColor="#555"
-          value={email}
-          onChangeText={setEmail}
-          keyboardType="email-address"
-          autoCapitalize="none"
-        />
-      </View>
-
-      <Text style={styles.label}>Contraseña</Text>
-      <View style={styles.inputWrapper}>
-        <FontAwesome name="lock" size={16} color="#777" style={styles.icon} />
-        <TextInput
-          style={styles.input}
-          placeholder="Mín. 6 caracteres"
-          placeholderTextColor="#555"
-          value={password}
-          onChangeText={setPassword}
-          secureTextEntry={!showPassword}
-        />
-        <Pressable onPress={() => setShowPassword(!showPassword)}>
-          <FontAwesome
-            name={showPassword ? 'eye' : 'eye-slash'}
-            size={18}
-            color="#777"
-            style={{ marginRight: 10 }}
-          />
-        </Pressable>
-      </View>
-
-      <Text style={styles.label}>Confirmar contraseña</Text>
-      <View style={styles.inputWrapper}>
-        <FontAwesome name="lock" size={16} color="#777" style={styles.icon} />
-        <TextInput
-          style={styles.input}
-          placeholder="Repite la contraseña"
-          placeholderTextColor="#555"
-          value={confirmPassword}
-          onChangeText={setConfirmPassword}
-          secureTextEntry={!showConfirm}
-        />
-        <Pressable onPress={() => setShowConfirm(!showConfirm)}>
-          <FontAwesome
-            name={showConfirm ? 'eye' : 'eye-slash'}
-            size={18}
-            color="#777"
-            style={{ marginRight: 10 }}
-          />
-        </Pressable>
-      </View>
-
-      <Pressable
-        style={({ pressed }) => [styles.button, pressed && styles.buttonPressed]}
-        onPress={handleRegister}
-        disabled={loading}
-      >
-        {loading ? (
-          <ActivityIndicator color="white" />
-        ) : (
-          <View style={styles.buttonRow}>
-            <FontAwesome name="user-plus" size={16} color="white" style={{ marginRight: 8 }} />
-            <Text style={styles.buttonText}>Crear Cuenta</Text>
+        <ScrollView contentContainerStyle={styles.scrollContent}>
+          {/* Título */}
+          <View style={styles.header}>
+            <Text style={styles.brandName}>TinderCanino</Text>
+            <Text style={styles.brandSub}>Crear cuenta</Text>
           </View>
-        )}
-      </Pressable>
 
-      <Pressable style={styles.googleBtn} onPress={() => Alert.alert('Próximamente', 'Login con Google disponible pronto')}>
-        <FontAwesome name="google" size={18} color="#fff" />
-        <Text style={styles.googleBtnText}>Continuar con Google</Text>
-      </Pressable>
+          {/* Card */}
+          <View style={styles.card}>
+            {/* Nombre */}
+            <Text style={styles.label}>Nombre</Text>
+            <View style={styles.inputWrapper}>
+              <FontAwesome name="user" size={16} color={colors.accent} style={styles.icon} />
+              <TextInput
+                style={styles.input}
+                placeholder="Tu nombre"
+                placeholderTextColor={colors.textMuted}
+                value={nombre}
+                onChangeText={setNombre}
+                autoCapitalize="words"
+              />
+            </View>
 
-      <Pressable
-        onPress={() => navigation.goBack()}
-        style={styles.linkRow}
-      >
-        <FontAwesome name="sign-in" size={14} color="#34C759" style={{ marginRight: 6 }} />
-        <Text style={styles.linkText}>¿Ya tienes cuenta? Inicia Sesión</Text>
-      </Pressable>
-    </KeyboardAwareScrollView>
+            {/* Email */}
+            <Text style={styles.label}>Correo electrónico</Text>
+            <View style={styles.inputWrapper}>
+              <FontAwesome name="envelope" size={16} color={colors.accent} style={styles.icon} />
+              <TextInput
+                style={styles.input}
+                placeholder="ejemplo@correo.com"
+                placeholderTextColor={colors.textMuted}
+                value={email}
+                onChangeText={setEmail}
+                keyboardType="email-address"
+                autoCapitalize="none"
+              />
+            </View>
+
+            {/* Password */}
+            <Text style={styles.label}>Contraseña</Text>
+            <View style={styles.inputWrapper}>
+              <FontAwesome name="lock" size={16} color={colors.accent} style={styles.icon} />
+              <TextInput
+                style={styles.input}
+                placeholder="Mín. 6 caracteres"
+                placeholderTextColor={colors.textMuted}
+                value={password}
+                onChangeText={setPassword}
+                secureTextEntry={!showPass}
+              />
+              <Pressable onPress={() => setShowPass(!showPass)} style={styles.eyeBtn}>
+                <MaterialIcons
+                  name={showPass ? 'visibility-off' : 'visibility'}
+                  size={20}
+                  color={colors.accent}
+                />
+              </Pressable>
+            </View>
+
+            {/* Confirmar password */}
+            <Text style={styles.label}>Confirmar contraseña</Text>
+            <View style={styles.inputWrapper}>
+              <FontAwesome name="lock" size={16} color={colors.accent} style={styles.icon} />
+              <TextInput
+                style={styles.input}
+                placeholder="Repite la contraseña"
+                placeholderTextColor={colors.textMuted}
+                value={confirmPassword}
+                onChangeText={setConfirmPassword}
+                secureTextEntry={!showConf}
+              />
+              <Pressable onPress={() => setShowConf(!showConf)} style={styles.eyeBtn}>
+                <MaterialIcons
+                  name={showConf ? 'visibility-off' : 'visibility'}
+                  size={20}
+                  color={colors.accent}
+                />
+              </Pressable>
+            </View>
+
+            {/* Botón registrar */}
+            <Pressable
+              style={({ pressed }) => [styles.registerBtn, pressed && styles.registerBtnPressed]}
+              onPress={handleRegister}
+              disabled={loading}
+            >
+              {loading ? (
+                <ActivityIndicator color={colors.textWhite} />
+              ) : (
+                <View style={styles.buttonRow}>
+                  <FontAwesome name="user-plus" size={16} color={colors.textWhite} style={{ marginRight: spacing.sm }} />
+                  <Text style={styles.registerBtnText}>Crear Cuenta</Text>
+                </View>
+              )}
+            </Pressable>
+
+            {/* Google */}
+            <View style={styles.divider}>
+              <View style={styles.dividerLine} />
+              <Text style={styles.dividerText}>o continúa con</Text>
+              <View style={styles.dividerLine} />
+            </View>
+            <Pressable
+              style={({ pressed }) => [styles.googleBtn, pressed && styles.googleBtnPressed]}
+              onPress={() => Alert.alert('Próximamente', 'Login con Google estará disponible pronto')}
+            >
+              <FontAwesome name="google" size={18} color={colors.accentDark} />
+              <Text style={styles.googleBtnText}>Google</Text>
+            </Pressable>
+          </View>
+
+          {/* Link a login */}
+          <Pressable onPress={() => navigation.goBack()} style={styles.loginLink}>
+            <MaterialIcons name="arrow-back" size={16} color={colors.primary} />
+            <Text style={styles.loginLinkText}>Ya tengo cuenta</Text>
+          </Pressable>
+        </ScrollView>
+      </View>
+    </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    flexGrow: 1,
-    justifyContent: 'center',
-    padding: 24,
-    backgroundColor: '#000000',
+    flex: 1,
+    backgroundColor: colors.bg,
   },
-  title: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: '#34C759',
-    textAlign: 'center',
+  scrollContent: {
+    flexGrow: 1,
+    alignItems: 'center',
+    paddingHorizontal: spacing.xxl,
+    paddingTop: 60,
+    paddingBottom: 40,
+  },
+  header: {
+    alignItems: 'center',
+    marginBottom: 28,
+  },
+  brandName: {
+    fontSize: 26,
+    fontWeight: '800',
+    color: colors.primary,
+    letterSpacing: 1,
     marginBottom: 4,
   },
-  subtitle: {
+  brandSub: {
     fontSize: 14,
-    color: '#888',
-    textAlign: 'center',
-    marginBottom: 28,
-    lineHeight: 20,
+    color: colors.accentDark,
+    fontWeight: '600',
+    letterSpacing: 2,
+    textTransform: 'uppercase',
+  },
+  card: {
+    width: '100%',
+    backgroundColor: colors.bgCard,
+    borderRadius: radius.xl,
+    borderWidth: 0.5,
+    borderColor: colors.border,
+    padding: spacing.xxl,
+    ...shadows.md,
   },
   label: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#fff',
+    fontSize: 12,
+    fontWeight: '700',
+    color: colors.accentDark,
+    letterSpacing: 1.5,
+    textTransform: 'uppercase',
     marginBottom: 6,
-    marginLeft: 2,
+    marginTop: spacing.sm,
   },
   inputWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1C1C1C',
-    borderRadius: 10,
-    marginBottom: 14,
-    borderWidth: 1,
-    borderColor: '#333',
-    paddingLeft: 12,
+    backgroundColor: colors.bgInput,
+    borderRadius: radius.md,
+    borderWidth: 1.5,
+    borderColor: colors.border,
+    paddingLeft: spacing.md,
+    marginBottom: spacing.md,
   },
   icon: {
-    marginRight: 10,
+    marginRight: spacing.sm,
   },
   input: {
     flex: 1,
-    paddingVertical: 14,
-    color: '#fff',
+    paddingVertical: 12,
+    color: colors.text,
     fontSize: 15,
   },
-  button: {
-    backgroundColor: '#34C759',
-    padding: 15,
-    borderRadius: 10,
-    alignItems: 'center',
-    marginTop: 10,
-    marginBottom: 20,
+  eyeBtn: {
+    padding: spacing.sm,
   },
-  buttonPressed: {
-    backgroundColor: '#2AA44F',
+  registerBtn: {
+    backgroundColor: colors.primary,
+    height: 50,
+    borderRadius: radius.lg,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: spacing.sm,
+    ...shadows.sm,
+  },
+  registerBtnPressed: {
+    opacity: 0.85,
   },
   buttonRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  buttonText: {
-    color: 'white',
+  registerBtnText: {
+    color: colors.textWhite,
     fontSize: 16,
-    fontWeight: 'bold',
+    fontWeight: '700',
   },
-  linkRow: {
+  divider: {
     flexDirection: 'row',
-    justifyContent: 'center',
     alignItems: 'center',
+    marginVertical: spacing.xl,
   },
-  linkText: {
-    color: '#34C759',
-    marginLeft: 6,
-    fontSize: 14,
+  dividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: colors.border,
+  },
+  dividerText: {
+    marginHorizontal: spacing.md,
+    color: colors.textMuted,
+    fontSize: 12,
+    fontWeight: '600',
   },
   googleBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    padding: 14,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: '#333',
-    backgroundColor: '#1C1C1C',
-    marginBottom: 20,
-    gap: 10,
+    height: 46,
+    borderRadius: radius.lg,
+    borderWidth: 1.5,
+    borderColor: colors.border,
+    backgroundColor: colors.bgCard,
+    gap: spacing.sm,
+  },
+  googleBtnPressed: {
+    opacity: 0.7,
   },
   googleBtnText: {
-    color: '#fff',
+    color: colors.accentDark,
     fontSize: 15,
+    fontWeight: '600',
+  },
+  loginLink: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    marginTop: 24,
+  },
+  loginLinkText: {
+    color: colors.primary,
+    fontSize: 14,
     fontWeight: '600',
   },
 });

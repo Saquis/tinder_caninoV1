@@ -3,7 +3,7 @@ import { NavigationContainer } from '@react-navigation/native';
 import AuthNavigator from './src/navigation/AuthNavigator';
 import MainNavigator from './src/navigation/MainNavigator';
 import SplashScreen from './src/screens/SplashScreen';
-import { loadTokens, clearTokens, api } from './src/api/client';
+import { loadTokens, clearTokens, api, apiWithRefresh } from './src/api/client';
 import CrearPerfilPerroScreen from './src/screens/CrearPerfilPerroScreen';
 
 export default function App() {
@@ -22,7 +22,7 @@ export default function App() {
       }
 
       try {
-        const perro = await api('GET', '/perros/mi-perro');
+        const perro = await apiWithRefresh('GET', '/perros/mi-perro');
         console.log('[App] Perro encontrado:', perro ? perro.id || perro.nombre : 'null');
         setScreen('main');
       } catch (err) {
@@ -39,22 +39,22 @@ export default function App() {
     })();
   }, []);
 
-  const handleLogin = useCallback(async () => { // Toda esta funciion se llama desde LoginScreen después de guardar los tokens, para verificar si el usuario tiene perro y redirigirlo por claude
-  console.log('[App] handleLogin llamado, verificando perro...');
-  try {
-    const perro = await api('GET', '/perros/mi-perro');
-    console.log('[App] Perro encontrado → main');
-    setScreen('main');
-  } catch (err) {
-    console.log('[App] Error perro:', err?.status);
-    if (err && err.status === 404) {
-      console.log('[App] Sin perro → newdog');
-      setScreen('newdog');
-    } else {
+  const handleLogin = useCallback(async () => {
+    console.log('[App] handleLogin llamado, verificando perro...');
+    try {
+      const perro = await apiWithRefresh('GET', '/perros/mi-perro');
+      console.log('[App] Perro encontrado → main');
       setScreen('main');
+    } catch (err) {
+      console.log('[App] Error perro:', err?.status);
+      if (err && err.status === 404) {
+        console.log('[App] Sin perro → newdog');
+        setScreen('newdog');
+      } else {
+        setScreen('main');
+      }
     }
-  }
-}, []);
+  }, []);
 
   const handleLogout = useCallback(async () => {
     console.log('[App] handleLogout');

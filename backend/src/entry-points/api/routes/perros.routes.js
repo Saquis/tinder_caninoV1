@@ -32,6 +32,7 @@ function crearPerrosRoutes(perroRepository, swipeRepository, bloqueoRepository, 
   router.put('/:id/ubicacion', auth.requiereAuth, controller.actualizarUbicacion);
   router.post('/:id/fotos', auth.requiereAuth, upload.single('foto'), controller.subirFoto);
   router.delete('/:id/fotos/:fotoId', auth.requiereAuth, controller.eliminarFoto);
+  router.put('/:id/fotos/:fotoId/portada', auth.requiereAuth, controller.establecerPortada);
   router.delete('/:id', auth.requiereAuth, controller.eliminarPerro);
 
   return router;

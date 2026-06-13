@@ -48,7 +48,7 @@ class SupabasePerroRepository extends PerroRepository {
     return this._mapear(data);
   }
 
-  async findCercanos({ latitud, longitud, distanciaKm, excluirIds = [], limite = 20, offset = 0 }) {
+  async findCercanos({ latitud, longitud, distanciaKm, excluirIds = [], limite = 20, offset = 0, proposito, raza, edadMax }) {
     // Usamos la función de distancia de PostGIS o filtro aproximado
     // Sin PostGIS: filtramos por diff de lat/lng (1° ≈ 111km)
     const diffGrados = distanciaKm / 111;
@@ -68,6 +68,16 @@ class SupabasePerroRepository extends PerroRepository {
 
     if (excluirIds.length > 0) {
       query = query.not('usuario_id', 'in', `(${excluirIds.map(id => `"${id}"`).join(',')})`);
+    }
+
+    if (proposito) {
+      query = query.eq('proposito', proposito);
+    }
+    if (raza) {
+      query = query.ilike('raza', `%${raza}%`);
+    }
+    if (edadMax !== undefined) {
+      query = query.lte('edad_meses', edadMax);
     }
 
     const { data, error, count } = await query;
@@ -91,6 +101,7 @@ class SupabasePerroRepository extends PerroRepository {
     if (cambios.latitud !== undefined) cambiosMapeados.latitud = cambios.latitud;
     if (cambios.longitud !== undefined) cambiosMapeados.longitud = cambios.longitud;
     if (cambios.fotoPrincipal !== undefined) cambiosMapeados.foto_principal = cambios.fotoPrincipal;
+    if (cambios.fotos !== undefined) cambiosMapeados.fotos = cambios.fotos;
 
     // Si no hay cambios, no ejecutar query
     if (Object.keys(cambiosMapeados).length === 0) {

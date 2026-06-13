@@ -7,6 +7,8 @@ import { useFocusEffect } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { apiWithRefresh } from '../api/client';
+import PerfilMatchModal from '../components/PerfilMatchModal';
+import { colors, spacing, radius, shadows, typography } from '../styles/theme';
 
 // ─── Helpers ────────────────────────────────────────────────
 
@@ -57,6 +59,8 @@ export default function MatchesScreen({ navigation }) {
   const [matches, setMatches] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [perfilVisible, setPerfilVisible] = useState(false);
+  const [perfilMatchData, setPerfilMatchData] = useState(null);
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
   const cargarMatches = useCallback(async () => {
@@ -77,7 +81,6 @@ export default function MatchesScreen({ navigation }) {
     }
   }, [fadeAnim]);
 
-  // Recargar al enfocar la pantalla
   useFocusEffect(
     useCallback(() => {
       cargarMatches();
@@ -88,6 +91,11 @@ export default function MatchesScreen({ navigation }) {
     setRefreshing(true);
     cargarMatches();
   }, [cargarMatches]);
+
+  const verPerfilMatch = useCallback((match) => {
+    setPerfilMatchData(match);
+    setPerfilVisible(true);
+  }, []);
 
   const eliminarMatch = useCallback((matchId) => {
     Alert.alert('Eliminar match', '¿Estás seguro?', [
@@ -114,7 +122,6 @@ export default function MatchesScreen({ navigation }) {
   }, [navigation]);
 
   // ── Separar matches ──
-
   const sinMensajes = matches
     .filter(m => !m.tieneMensajes)
     .sort((a, b) => new Date(b.fechaMatch) - new Date(a.fechaMatch));
@@ -126,23 +133,24 @@ export default function MatchesScreen({ navigation }) {
   const hayNuevos = sinMensajes.length > 0;
 
   // ── Loading ──
-
   if (loading) {
     return (
       <View style={[styles.centerContainer, { paddingTop: insets.top }]}>
-        <ActivityIndicator size="large" color="#34C759" />
+        <View style={styles.loadingCard}>
+          <ActivityIndicator size="large" color={colors.primary} />
+          <Text style={styles.loadingText}>Cargando matches...</Text>
+        </View>
       </View>
     );
   }
 
   // ── Vacío ──
-
   if (matches.length === 0) {
     return (
       <View style={[styles.container, { paddingTop: insets.top + 8 }]}>
         <Text style={styles.title}>🐾 Mis Matches</Text>
         <View style={styles.emptyContainer}>
-          <MaterialIcons name="favorite-border" size={60} color="#444" />
+          <MaterialIcons name="favorite-border" size={50} color={colors.border} />
           <Text style={styles.emptyTitle}>Sin matches aún</Text>
           <Text style={styles.emptyText}>
             Sigue explorando perros y haz like para encontrar matches
@@ -153,7 +161,6 @@ export default function MatchesScreen({ navigation }) {
   }
 
   // ── Render ──
-
   return (
     <View style={[styles.container, { paddingTop: insets.top + 8 }]}>
       <Text style={styles.title}>🐾 Mis Matches</Text>
@@ -194,7 +201,7 @@ export default function MatchesScreen({ navigation }) {
                                   />
                                 ) : (
                                   <View style={styles.nuevoIconFallback}>
-                                    <MaterialIcons name="pets" size={32} color="#34C759" />
+                                    <MaterialIcons name="pets" size={28} color={colors.primary} />
                                   </View>
                                 )}
                               </View>
@@ -215,7 +222,7 @@ export default function MatchesScreen({ navigation }) {
                 </>
               )}
               {conMensajes.length > 0 && (
-                <Text style={[styles.sectionHeader, hayNuevos && { marginTop: 8 }]}>
+                <Text style={[styles.sectionHeader, hayNuevos && { marginTop: spacing.sm }]}>
                   Mensajes
                 </Text>
               )}
@@ -224,7 +231,7 @@ export default function MatchesScreen({ navigation }) {
           ListFooterComponent={
             conMensajes.length === 0 && hayNuevos ? (
               <View style={styles.emptyConvContainer}>
-                <MaterialIcons name="chat-bubble-outline" size={48} color="#444" />
+                <MaterialIcons name="chat-bubble-outline" size={40} color={colors.border} />
                 <Text style={styles.emptyConvTitle}>
                   ¡Tienes {sinMensajes.length} match{sinMensajes.length !== 1 ? 'es' : ''}!
                 </Text>
@@ -236,8 +243,8 @@ export default function MatchesScreen({ navigation }) {
             <RefreshControl
               refreshing={refreshing}
               onRefresh={onRefresh}
-              tintColor="#34C759"
-              colors={['#34C759']}
+              tintColor={colors.primary}
+              colors={[colors.primary]}
             />
           }
           renderItem={({ item }) => {
@@ -246,10 +253,9 @@ export default function MatchesScreen({ navigation }) {
             return (
               <Pressable
                 style={styles.convCard}
-                onPress={() => abrirChat(item)}
                 onLongPress={() => eliminarMatch(item.id)}
               >
-                <View style={styles.convAvatarBox}>
+                <Pressable style={styles.convAvatarBox} onPress={() => verPerfilMatch(item)}>
                   {perro.fotoPrincipal ? (
                     <Image
                       source={{ uri: perro.fotoPrincipal }}
@@ -257,13 +263,13 @@ export default function MatchesScreen({ navigation }) {
                     />
                   ) : (
                     <View style={styles.convIconFallback}>
-                      <MaterialIcons name="pets" size={28} color="#34C759" />
+                      <MaterialIcons name="pets" size={24} color={colors.primary} />
                     </View>
                   )}
                   {noLeidos && <View style={styles.convNoLeidoDot} />}
-                </View>
+                </Pressable>
 
-                <View style={styles.convContent}>
+                <Pressable style={styles.convContent} onPress={() => abrirChat(item)}>
                   <View style={styles.convTopRow}>
                     <Text
                       style={[styles.convNombre, noLeidos && styles.convNombreNoLeido]}
@@ -281,12 +287,21 @@ export default function MatchesScreen({ navigation }) {
                   >
                     {item.ultimoMensaje || 'Sin mensajes aún'}
                   </Text>
-                </View>
+                </Pressable>
               </Pressable>
             );
           }}
         />
       </Animated.View>
+
+      <PerfilMatchModal
+        visible={perfilVisible}
+        perro={perfilMatchData?.perro}
+        onCerrar={() => setPerfilVisible(false)}
+        onAbrirChat={() => {
+          if (perfilMatchData) abrirChat(perfilMatchData);
+        }}
+      />
     </View>
   );
 }
@@ -296,22 +311,38 @@ export default function MatchesScreen({ navigation }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000',
-    padding: 16,
+    backgroundColor: colors.bg,
+    padding: spacing.lg,
     paddingTop: 8,
   },
   centerContainer: {
     flex: 1,
-    backgroundColor: '#000',
+    backgroundColor: colors.bg,
     justifyContent: 'center',
     alignItems: 'center',
   },
+  loadingCard: {
+    alignItems: 'center',
+    padding: spacing.xxl,
+    backgroundColor: colors.bgCard,
+    borderRadius: radius.xl,
+    borderWidth: 1,
+    borderColor: colors.border,
+    gap: spacing.md,
+    ...shadows.md,
+  },
+  loadingText: {
+    color: colors.textLight,
+    fontSize: 14,
+    fontWeight: '500',
+  },
   title: {
     fontSize: 24,
-    fontWeight: 'bold',
-    color: '#34C759',
-    marginBottom: 12,
-    marginTop: 4,
+    fontWeight: '800',
+    color: colors.primary,
+    marginBottom: spacing.md,
+    marginTop: spacing.xs,
+    letterSpacing: 0.5,
   },
   listContent: {
     paddingBottom: 24,
@@ -319,59 +350,60 @@ const styles = StyleSheet.create({
 
   // ── Section Headers ──
   sectionHeader: {
-    color: '#888',
-    fontSize: 13,
+    color: colors.accentDark,
+    fontSize: 12,
     fontWeight: '700',
     textTransform: 'uppercase',
-    letterSpacing: 1,
-    marginBottom: 10,
-    marginTop: 4,
+    letterSpacing: 1.5,
+    marginBottom: spacing.md,
+    marginTop: spacing.xs,
   },
 
   // ── Nuevos Matches (horizontal scroll) ──
   nuevosScroll: {
-    paddingBottom: 8,
+    paddingBottom: spacing.sm,
     flexDirection: 'row',
   },
   nuevoCard: {
     alignItems: 'center',
-    width: 88,
-    marginRight: 14,
+    width: 90,
+    marginRight: spacing.lg,
   },
   nuevoAvatarWrapper: {
     position: 'relative',
     marginBottom: 6,
   },
   nuevoAvatarBorder: {
-    width: 84,
-    height: 84,
-    borderRadius: 42,
+    width: 86,
+    height: 86,
+    borderRadius: 43,
     borderWidth: 3,
-    borderColor: '#34C759',
+    borderColor: colors.primary,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#1C1C1C',
+    backgroundColor: colors.bgCard,
+    ...shadows.sm,
   },
   nuevoAvatarBox: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
-    backgroundColor: '#2A2A2A',
+    width: 74,
+    height: 74,
+    borderRadius: 37,
+    backgroundColor: colors.borderLight,
     justifyContent: 'center',
     alignItems: 'center',
     overflow: 'hidden',
   },
   nuevoAvatarImage: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
+    width: 74,
+    height: 74,
+    borderRadius: 37,
     resizeMode: 'cover',
   },
   nuevoIconFallback: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
-    backgroundColor: '#2A2A2A',
+    width: 74,
+    height: 74,
+    borderRadius: 37,
+    backgroundColor: colors.borderLight,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -379,18 +411,20 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: -4,
     right: -6,
-    backgroundColor: '#34C759',
-    borderRadius: 8,
+    backgroundColor: colors.primary,
+    borderRadius: radius.sm,
     paddingHorizontal: 6,
     paddingVertical: 2,
+    ...shadows.sm,
   },
   badgeNuevoText: {
-    color: '#000',
+    color: colors.textWhite,
     fontSize: 9,
-    fontWeight: 'bold',
+    fontWeight: '800',
+    letterSpacing: 0.3,
   },
   nuevoNombre: {
-    color: '#fff',
+    color: colors.text,
     fontSize: 12,
     fontWeight: '600',
     textAlign: 'center',
@@ -400,21 +434,22 @@ const styles = StyleSheet.create({
   convCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1C1C1C',
-    borderRadius: 14,
+    backgroundColor: colors.bgCard,
+    borderRadius: radius.lg,
     borderWidth: 1,
-    borderColor: '#333',
-    padding: 12,
-    marginBottom: 8,
+    borderColor: colors.border,
+    padding: spacing.md,
+    marginBottom: spacing.sm,
+    ...shadows.sm,
   },
   convAvatarBox: {
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: '#2A2A2A',
+    backgroundColor: colors.borderLight,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 12,
+    marginRight: spacing.md,
     overflow: 'hidden',
     position: 'relative',
   },
@@ -428,7 +463,7 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: '#2A2A2A',
+    backgroundColor: colors.borderLight,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -439,9 +474,9 @@ const styles = StyleSheet.create({
     width: 12,
     height: 12,
     borderRadius: 6,
-    backgroundColor: '#34C759',
+    backgroundColor: colors.primary,
     borderWidth: 2,
-    borderColor: '#1C1C1C',
+    borderColor: colors.bgCard,
   },
   convContent: {
     flex: 1,
@@ -450,28 +485,30 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 4,
+    marginBottom: 2,
   },
   convNombre: {
-    color: '#fff',
+    color: colors.text,
     fontSize: 15,
     fontWeight: '600',
     flex: 1,
-    marginRight: 8,
+    marginRight: spacing.sm,
   },
   convNombreNoLeido: {
     fontWeight: '800',
+    color: colors.primaryDark,
   },
   convTimestamp: {
-    color: '#666',
+    color: colors.textMuted,
     fontSize: 12,
   },
   convPreview: {
-    color: '#888',
+    color: colors.textLight,
     fontSize: 13,
+    marginTop: 1,
   },
   convPreviewNoLeido: {
-    color: '#ccc',
+    color: colors.text,
     fontWeight: '600',
   },
 
@@ -483,14 +520,14 @@ const styles = StyleSheet.create({
     padding: 40,
   },
   emptyTitle: {
-    color: '#fff',
+    color: colors.text,
     fontSize: 18,
-    fontWeight: 'bold',
-    marginTop: 16,
-    marginBottom: 8,
+    fontWeight: '700',
+    marginTop: spacing.lg,
+    marginBottom: spacing.sm,
   },
   emptyText: {
-    color: '#888',
+    color: colors.textLight,
     fontSize: 14,
     textAlign: 'center',
     lineHeight: 20,
@@ -500,14 +537,14 @@ const styles = StyleSheet.create({
     paddingVertical: 40,
   },
   emptyConvTitle: {
-    color: '#fff',
+    color: colors.text,
     fontSize: 16,
-    fontWeight: 'bold',
-    marginTop: 12,
-    marginBottom: 4,
+    fontWeight: '700',
+    marginTop: spacing.md,
+    marginBottom: spacing.xs,
   },
   emptyConvText: {
-    color: '#888',
+    color: colors.textLight,
     fontSize: 14,
   },
 });

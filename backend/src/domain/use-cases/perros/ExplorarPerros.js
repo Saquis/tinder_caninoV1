@@ -9,7 +9,7 @@ class ExplorarPerros {
     this.swipeRepository = swipeRepository;
   }
 
-  async execute({ usuarioId, latitud, longitud, pagina = 0, bloqueadosIds = [] }) {
+  async execute({ usuarioId, latitud, longitud, pagina = 0, bloqueadosIds = [], proposito, raza, edadMax, distanciaMax }) {
     const miPerro = await this.perroRepository.findByUsuarioId(usuarioId);
     if (!miPerro) throw new (require('../../entities/Usuario').AppError)('Debes crear el perfil de tu perro primero', 400);
 
@@ -19,7 +19,7 @@ class ExplorarPerros {
 
     // Excluir: swipedaos, yo mismo, bloqueados (por mí o que me bloquearon)
     const excluirIds = [...new Set([...yaSwipedaos, usuarioId, ...bloqueadosIds])];
-    const distanciaKm = config.app.maxDistanciaKm;
+    const distanciaKm = distanciaMax ? parseFloat(distanciaMax) : config.app.maxDistanciaKm;
     const limite = 20;
     const offset = pagina * limite;
 
@@ -30,6 +30,9 @@ class ExplorarPerros {
       excluirIds,
       limite,
       offset,
+      proposito,
+      raza,
+      edadMax: edadMax ? parseInt(edadMax, 10) : undefined,
     });
 
     return {

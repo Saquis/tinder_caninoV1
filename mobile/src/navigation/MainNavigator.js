@@ -6,6 +6,8 @@ import SwipeScreen from '../screens/SwipeScreen';
 import MatchesScreen from '../screens/MatchesScreen';
 import ChatScreen from '../screens/ChatScreen';
 import PerfilScreen from '../screens/PerfilScreen';
+import MapScreen from '../screens/MapScreen';
+import { colors } from '../styles/theme';
 
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
@@ -20,8 +22,8 @@ function MatchesStack() {
         options={{
           headerShown: true,
           headerTitle: 'Chat',
-          headerStyle: { backgroundColor: '#000' },
-          headerTintColor: '#34C759',
+          headerStyle: { backgroundColor: colors.bgCard },
+          headerTintColor: colors.primary,
         }}
       />
     </Stack.Navigator>
@@ -34,15 +36,15 @@ export default function MainNavigator({ onLogout }) {
       screenOptions={{
         headerShown: false,
         tabBarStyle: {
-          backgroundColor: '#1C1C1C',
-          borderTopColor: '#333',
+          backgroundColor: colors.bgCard,
+          borderTopColor: colors.border,
           borderTopWidth: 1,
           paddingBottom: 6,
           paddingTop: 6,
           height: 60,
         },
-        tabBarActiveTintColor: '#34C759',
-        tabBarInactiveTintColor: '#666',
+        tabBarActiveTintColor: colors.primary,
+        tabBarInactiveTintColor: colors.textMuted,
         tabBarLabelStyle: {
           fontSize: 11,
           fontWeight: '600',
@@ -59,6 +61,16 @@ export default function MainNavigator({ onLogout }) {
       >
         {props => <SwipeScreen {...props} />}
       </Tab.Screen>
+
+      <Tab.Screen
+        name="Mapa"
+        component={MapScreen}
+        options={{
+          tabBarIcon: ({ color }) => (
+            <MaterialIcons name="map" size={24} color={color} />
+          ),
+        }}
+      />
 
       <Tab.Screen
         name="Matches"
@@ -83,4 +95,3 @@ export default function MainNavigator({ onLogout }) {
     </Tab.Navigator>
   );
 }
-

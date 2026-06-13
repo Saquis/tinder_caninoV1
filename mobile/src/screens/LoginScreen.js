@@ -8,6 +8,7 @@ import { api, saveTokens } from '../api/client';
 import FontAwesome from 'react-native-vector-icons/FontAwesome';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import AnimatedDog from '../components/AnimatedDog';
+import { colors, spacing, radius, shadows, typography } from '../styles/theme';
 
 export default function LoginScreen({ navigation, onLogin }) {
   const [email, setEmail] = useState('');
@@ -93,7 +94,7 @@ export default function LoginScreen({ navigation, onLogin }) {
   return (
     <View style={styles.container}>
       <LinearGradient
-        colors={['#FFF8F0', '#F5E8D8', '#FFF8F0']}
+        colors={[colors.gradientStart, colors.gradientMid, colors.gradientEnd]}
         locations={[0, 0.3, 1]}
         style={StyleSheet.absoluteFill}
       />
@@ -132,11 +133,11 @@ export default function LoginScreen({ navigation, onLogin }) {
 
           <Text style={styles.label}>Correo electrónico</Text>
           <View style={styles.inputWrapper}>
-            <MaterialIcons name="email" size={18} color="#C4A882" style={styles.icon} />
+            <MaterialIcons name="email" size={18} color={colors.accent} style={styles.icon} />
             <TextInput
               style={styles.input}
               placeholder="tu@correo.com"
-              placeholderTextColor="#C4A882"
+              placeholderTextColor={colors.textMuted}
               value={email}
               onChangeText={setEmail}
               keyboardType="email-address"
@@ -146,11 +147,11 @@ export default function LoginScreen({ navigation, onLogin }) {
 
           <Text style={styles.label}>Contraseña</Text>
           <View style={styles.inputWrapper}>
-            <MaterialIcons name="lock" size={18} color="#C4A882" style={styles.icon} />
+            <MaterialIcons name="lock" size={18} color={colors.accent} style={styles.icon} />
             <TextInput
               style={styles.input}
               placeholder="••••••••"
-              placeholderTextColor="#C4A882"
+              placeholderTextColor={colors.textMuted}
               value={password}
               onChangeText={setPassword}
               secureTextEntry={!showPassword}
@@ -159,7 +160,7 @@ export default function LoginScreen({ navigation, onLogin }) {
               <FontAwesome
                 name={showPassword ? 'eye' : 'eye-slash'}
                 size={18}
-                color="#C4A882"
+                color={colors.accent}
               />
             </Pressable>
           </View>
@@ -172,7 +173,7 @@ export default function LoginScreen({ navigation, onLogin }) {
               disabled={loading}
             >
               {loading ? (
-                <ActivityIndicator color="white" />
+                <ActivityIndicator color={colors.textWhite} />
               ) : (
                 <View style={styles.buttonRow}>
                   <Text style={styles.boneIcon}>🦴</Text>
@@ -194,7 +195,7 @@ export default function LoginScreen({ navigation, onLogin }) {
             style={({ pressed }) => [styles.googleBtn, pressed && styles.googleBtnPressed]}
             onPress={() => Alert.alert('Próximamente', 'Login con Google disponible pronto')}
           >
-            <FontAwesome name="google" size={18} color="#3D2B1A" />
+            <FontAwesome name="google" size={18} color={colors.text} />
             <Text style={styles.googleBtnText}>Google</Text>
           </Pressable>
         </Animated.View>
@@ -216,12 +217,12 @@ export default function LoginScreen({ navigation, onLogin }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFF8F0',
+    backgroundColor: colors.bg,
   },
   scrollContent: {
     flexGrow: 1,
     alignItems: 'center',
-    paddingHorizontal: 24,
+    paddingHorizontal: spacing.xxl,
     paddingTop: 60,
     paddingBottom: 40,
   },
@@ -229,19 +230,19 @@ const styles = StyleSheet.create({
     height: 130,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: spacing.sm,
   },
   brandName: {
     fontFamily: 'sans-serif',
     fontSize: 30,
     fontWeight: '800',
-    color: '#C4622D',
+    color: colors.primary,
     letterSpacing: 1,
-    marginBottom: 4,
+    marginBottom: spacing.xs,
   },
   brandSub: {
     fontSize: 13,
-    color: '#A07850',
+    color: colors.accentDark,
     fontWeight: '600',
     letterSpacing: 2,
     textTransform: 'uppercase',
@@ -250,22 +251,23 @@ const styles = StyleSheet.create({
   },
   card: {
     width: '100%',
-    backgroundColor: '#fff',
-    borderRadius: 20,
+    backgroundColor: colors.bgCard,
+    borderRadius: radius.xl,
     borderWidth: 0.5,
-    borderColor: '#E0CAB4',
-    padding: 24,
+    borderColor: colors.border,
+    padding: spacing.xxl,
+    ...shadows.md,
   },
   cardTitle: {
     fontSize: 20,
     fontWeight: '700',
-    color: '#3D2B1A',
+    color: colors.text,
     marginBottom: 20,
   },
   label: {
     fontSize: 12,
     fontWeight: '700',
-    color: '#A07850',
+    color: colors.accentDark,
     letterSpacing: 1.5,
     textTransform: 'uppercase',
     marginBottom: 6,
@@ -273,38 +275,39 @@ const styles = StyleSheet.create({
   inputWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFF8F0',
-    borderRadius: 12,
-    marginBottom: 16,
+    backgroundColor: colors.bgInput,
+    borderRadius: radius.md,
+    marginBottom: spacing.lg,
     borderWidth: 1.5,
-    borderColor: '#E0CAB4',
-    paddingLeft: 14,
+    borderColor: colors.border,
+    paddingLeft: spacing.md,
   },
   icon: {
-    marginRight: 8,
+    marginRight: spacing.sm,
   },
   input: {
     flex: 1,
     paddingVertical: 12,
-    color: '#3D2B1A',
+    color: colors.text,
     fontSize: 15,
   },
   eyeBtn: {
-    padding: 10,
+    padding: spacing.sm,
   },
   loginBtn: {
-    backgroundColor: '#C4622D',
+    backgroundColor: colors.primary,
     height: 50,
-    borderRadius: 14,
+    borderRadius: radius.lg,
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: 4,
+    marginTop: spacing.xs,
+    ...shadows.sm,
   },
   loginBtnPressed: {
-    backgroundColor: '#A8501F',
+    backgroundColor: colors.primaryDark,
   },
   loginBtnText: {
-    color: '#fff',
+    color: colors.textWhite,
     fontSize: 18,
     fontWeight: '700',
     letterSpacing: 1,
@@ -315,41 +318,41 @@ const styles = StyleSheet.create({
   buttonRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: spacing.sm,
   },
   divider: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginVertical: 16,
+    marginVertical: spacing.lg,
   },
   dividerLine: {
     flex: 1,
     height: 1,
-    backgroundColor: '#E0CAB4',
+    backgroundColor: colors.border,
   },
   dividerText: {
     fontSize: 12,
-    color: '#C4A882',
+    color: colors.accent,
     fontWeight: '600',
-    marginHorizontal: 10,
+    marginHorizontal: spacing.sm,
   },
   googleBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     height: 44,
-    borderRadius: 12,
+    borderRadius: radius.md,
     borderWidth: 1.5,
-    borderColor: '#E0CAB4',
-    backgroundColor: '#FFF8F0',
-    gap: 8,
+    borderColor: colors.border,
+    backgroundColor: colors.bgInput,
+    gap: spacing.sm,
   },
   googleBtnPressed: {
-    backgroundColor: '#F5E8D8',
-    borderColor: '#C4A882',
+    backgroundColor: colors.gradientMid,
+    borderColor: colors.accent,
   },
   googleBtnText: {
-    color: '#3D2B1A',
+    color: colors.text,
     fontSize: 14,
     fontWeight: '700',
   },
@@ -359,10 +362,10 @@ const styles = StyleSheet.create({
   },
   registerText: {
     fontSize: 13,
-    color: '#A07850',
+    color: colors.accentDark,
   },
   registerLink: {
-    color: '#C4622D',
+    color: colors.primary,
     fontWeight: '700',
   },
 });

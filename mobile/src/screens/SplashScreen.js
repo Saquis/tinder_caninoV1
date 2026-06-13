@@ -1,12 +1,18 @@
 import React from 'react';
 import { View, Text, ActivityIndicator, StyleSheet } from 'react-native';
+import { colors, spacing } from '../styles/theme';
+import { LinearGradient } from 'expo-linear-gradient';
 
 export default function SplashScreen() {
   return (
     <View style={styles.container}>
+      <LinearGradient
+        colors={[colors.gradientStart, colors.gradientMid, colors.gradientEnd]}
+        style={StyleSheet.absoluteFill}
+      />
       <Text style={styles.emoji}>🐾</Text>
       <Text style={styles.title}>TinderCanino</Text>
-      <ActivityIndicator size="large" color="#34C759" style={styles.loader} />
+      <ActivityIndicator size="large" color={colors.primary} style={styles.loader} />
     </View>
   );
 }
@@ -14,21 +20,21 @@ export default function SplashScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000',
     justifyContent: 'center',
     alignItems: 'center',
   },
   emoji: {
     fontSize: 60,
-    marginBottom: 12,
+    marginBottom: spacing.md,
   },
   title: {
     fontSize: 28,
-    fontWeight: 'bold',
-    color: '#34C759',
-    marginBottom: 32,
+    fontWeight: '800',
+    color: colors.primary,
+    marginBottom: spacing.xxxl,
+    letterSpacing: 1,
   },
   loader: {
-    marginTop: 8,
+    marginTop: spacing.sm,
   },
 });
