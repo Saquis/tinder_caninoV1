@@ -14,22 +14,49 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.tindercanino.app"
+      "bundleIdentifier": "com.tindercanino.app",
+      "infoPlist": {
+        "NSPhotoLibraryUsageDescription": "Necesitamos acceso a tus fotos para que puedas poner la foto de tu perro.",
+        "NSLocationWhenInUseUsageDescription": "Necesitamos tu ubicación para mostrar perros cercanos a ti."
+      }
     },
     "android": {
       "package": "com.tindercanino.app",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#000000"
+        "backgroundColor": "#FFF8F0"
       },
-      "edgeToEdgeEnabled": true
+      "edgeToEdgeEnabled": true,
+      "permissions": [
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION",
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"
     },
+    "plugins": [
+      "expo-image-picker",
+      "expo-location",
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "compileSdkVersion": 35,
+            "targetSdkVersion": 35,
+            "buildToolsVersion": "35.0.0"
+          },
+          "ios": {
+            "deploymentTarget": "15.1"
+          }
+        }
+      ]
+    ],
     "extra": {
       "eas": {
-        "projectId": "tindercanino-mobile"
+        "projectId": "tinder_caninov1"
       }
     }
   }

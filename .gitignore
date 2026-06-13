@@ -16,6 +16,7 @@ mobile/.expo/
 mobile/dist/
 *.txt
 memoria/
+memory/
 dog_shop_login_ejemplo.html
 GUIA_MAESTRA.md
 PLAN_FRONTEND_MOBILE.md
