@@ -266,9 +266,9 @@ const styles = StyleSheet.create({
   gpsText: { fontSize: 11, fontWeight: '700', color: '#2E7D32' },
   subtitle: { fontSize: 13, color: colors.textLight },
 
-  // Mapa view-based
+  // Mapa view-based — más grande
   mapView: {
-    height: 280,
+    height: 420,
     position: 'relative',
     overflow: 'hidden',
     borderBottomWidth: 1,
@@ -376,7 +376,7 @@ const styles = StyleSheet.create({
 
   // Preview
   previewContainer: {
-    position: 'absolute', left: spacing.xxl, right: spacing.xxl, top: 370,
+    position: 'absolute', left: spacing.xxl, right: spacing.xxl, top: 460,
     zIndex: 30,
   },
   previewCard: {

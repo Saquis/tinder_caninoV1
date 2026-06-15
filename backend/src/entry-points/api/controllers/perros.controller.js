@@ -48,11 +48,16 @@ function crearPerrosController(perroRepository, swipeRepository, bloqueoReposito
 
     async explorar(req, res, next) {
       try {
-        const { pagina, proposito, raza, edadMax } = req.query;
+        const { pagina, proposito, raza, edadMax, latitud, longitud, distanciaMax } = req.query;
         const resultado = await explorar.execute({
           usuarioId: req.usuario.id,
           pagina: parseInt(pagina, 10) || 0,
-          filtros: { proposito, raza, edadMax: edadMax ? parseInt(edadMax, 10) : undefined },
+          proposito,
+          raza,
+          edadMax: edadMax ? parseInt(edadMax, 10) : undefined,
+          latitud: latitud ? parseFloat(latitud) : undefined,
+          longitud: longitud ? parseFloat(longitud) : undefined,
+          distanciaMax: distanciaMax ? parseFloat(distanciaMax) : undefined,
         });
         res.json(resultado);
       } catch (e) { next(e); }
@@ -66,7 +71,7 @@ function crearPerrosController(perroRepository, swipeRepository, bloqueoReposito
         if (perro.usuarioId !== req.usuario.id) {
           return res.status(403).json({ error: { message: 'No tienes permiso para modificar este perro' } });
         }
-        const resultado = await actualizar.execute({ id: req.params.id, ...req.body });
+        const resultado = await actualizar.execute({ id: req.params.id, usuarioId: req.usuario.id, cambios: req.body });
         res.json(resultado.toJSON());
       } catch (e) { next(e); }
     },

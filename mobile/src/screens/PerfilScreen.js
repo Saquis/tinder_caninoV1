@@ -32,6 +32,10 @@ export default function PerfilScreen({ onLogout, navigation }) {
   // Galería de fotos
   const [fotos, setFotos] = useState([]);
 
+  // Estado de eliminación
+  const [eliminandoPerfil, setEliminandoPerfil] = useState(false);
+  const [eliminandoCuenta, setEliminandoCuenta] = useState(false);
+
   const propositos = [
     { key: 'jugar', label: 'Jugar', icon: 'sports-esports' },
     { key: 'pasear', label: 'Pasear', icon: 'directions-walk' },
@@ -421,6 +425,97 @@ export default function PerfilScreen({ onLogout, navigation }) {
         <MaterialIcons name="logout" size={18} color={colors.textWhite} style={{ marginRight: spacing.sm }} />
         <Text style={styles.logoutText}>Cerrar Sesión</Text>
       </Pressable>
+
+      <View style={styles.divider} />
+
+      {/* Eliminar perfil */}
+      <Text style={styles.deleteSectionTitle}>🗑️ Zona de peligro</Text>
+
+      <Pressable
+        style={({ pressed }) => [
+          styles.deleteButton,
+          pressed && { opacity: 0.8 },
+          eliminandoPerfil && { opacity: 0.5 },
+        ]}
+        onPress={() => {
+          Alert.alert(
+            'Eliminar perfil de ' + (perro?.nombre || 'tu perro'),
+            'Se borrarán todas sus fotos. Esta acción no se puede deshacer.',
+            [
+              { text: 'Cancelar', style: 'cancel' },
+              { text: 'Eliminar', style: 'destructive', onPress: async () => {
+                setEliminandoPerfil(true);
+                try {
+                  await api('DELETE', '/perros/' + perroId);
+                  Alert.alert('Perfil eliminado', 'El perfil de ' + perro?.nombre + ' ha sido eliminado.');
+                  setPerro(null);
+                  setPerroId(null);
+                } catch (error) {
+                  const msg = error?.error?.message || error?.message || 'Error al eliminar';
+                  Alert.alert('Error', msg);
+                } finally {
+                  setEliminandoPerfil(false);
+                }
+              } },
+            ]
+          );
+        }}
+        disabled={eliminandoPerfil || !perroId}
+      >
+        {eliminandoPerfil ? (
+          <ActivityIndicator color={colors.error} />
+        ) : (
+          <>
+            <MaterialIcons name="pets-off" size={18} color={colors.error} style={{ marginRight: spacing.sm }} />
+            <Text style={styles.deleteButtonText}>Eliminar perfil de {perro?.nombre || 'mi perro'}</Text>
+          </>
+        )}
+      </Pressable>
+
+      <Pressable
+        style={({ pressed }) => [
+          styles.deleteButton,
+          styles.deleteCuentaButton,
+          pressed && { opacity: 0.8 },
+          eliminandoCuenta && { opacity: 0.5 },
+        ]}
+        onPress={() => {
+          Alert.alert(
+            'Eliminar cuenta',
+            'Se eliminará tu perfil de perro, fotos, matches y toda tu información. Esta acción no se puede deshacer.',
+            [
+              { text: 'Cancelar', style: 'cancel' },
+              {
+                text: 'Eliminar cuenta',
+                style: 'destructive',
+                onPress: async () => {
+                  setEliminandoCuenta(true);
+                  try {
+                    await api('DELETE', '/usuarios/me');
+                    Alert.alert('Cuenta eliminada', 'Tu cuenta ha sido desactivada.');
+                    onLogout();
+                  } catch (error) {
+                    const msg = error?.error?.message || error?.message || 'Error al eliminar';
+                    Alert.alert('Error', msg);
+                  } finally {
+                    setEliminandoCuenta(false);
+                  }
+                },
+              },
+            ]
+          );
+        }}
+        disabled={eliminandoCuenta}
+      >
+        {eliminandoCuenta ? (
+          <ActivityIndicator color="#B71C1C" />
+        ) : (
+          <>
+            <MaterialIcons name="delete-forever" size={18} color="#B71C1C" style={{ marginRight: spacing.sm }} />
+            <Text style={[styles.deleteButtonText, { color: '#B71C1C' }]}>Eliminar cuenta permanentemente</Text>
+          </>
+        )}
+      </Pressable>
     </ScrollView>
   );
 }
@@ -736,6 +831,36 @@ const styles = StyleSheet.create({
   logoutText: {
     color: colors.textWhite,
     fontSize: 15,
+    fontWeight: '700',
+  },
+
+  // ===== ZONA DE PELIGRO =====
+  deleteSectionTitle: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: colors.error,
+    textTransform: 'uppercase',
+    letterSpacing: 2,
+    marginBottom: spacing.md,
+  },
+  deleteButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: spacing.lg,
+    borderRadius: radius.lg,
+    borderWidth: 1.5,
+    borderColor: colors.error + '40',
+    backgroundColor: '#FFF0F0',
+    marginBottom: spacing.md,
+  },
+  deleteCuentaButton: {
+    borderColor: '#B71C1C',
+    backgroundColor: '#FFEBEE',
+  },
+  deleteButtonText: {
+    color: colors.error,
+    fontSize: 14,
     fontWeight: '700',
   },
 });
