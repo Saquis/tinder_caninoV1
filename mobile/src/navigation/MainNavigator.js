@@ -7,10 +7,32 @@ import MatchesScreen from '../screens/MatchesScreen';
 import ChatScreen from '../screens/ChatScreen';
 import PerfilScreen from '../screens/PerfilScreen';
 import MapScreen from '../screens/MapScreen';
+import PrivacyScreen from '../screens/PrivacyScreen';
+import TermsScreen from '../screens/TermsScreen';
 import { colors } from '../styles/theme';
 
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
+
+function PerfilStack({ onLogout }) {
+  return (
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="PerfilPrincipal">
+        {props => <PerfilScreen {...props} onLogout={onLogout} />}
+      </Stack.Screen>
+      <Stack.Screen
+        name="Privacy"
+        component={PrivacyScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="Terms"
+        component={TermsScreen}
+        options={{ headerShown: false }}
+      />
+    </Stack.Navigator>
+  );
+}
 
 function MatchesStack() {
   return (
@@ -90,7 +112,7 @@ export default function MainNavigator({ onLogout }) {
           ),
         }}
       >
-        {props => <PerfilScreen {...props} onLogout={onLogout} />}
+        {props => <PerfilStack {...props} onLogout={onLogout} />}
       </Tab.Screen>
     </Tab.Navigator>
   );

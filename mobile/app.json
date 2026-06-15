@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "TinderCanino",
-    "slug": "tinder-canino-mobile",
+    "slug": "tinder_caninov1",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -49,14 +49,15 @@
             "buildToolsVersion": "35.0.0"
           },
           "ios": {
-            "deploymentTarget": "15.1"
+            "deploymentTarget": "16.4"
           }
         }
-      ]
+      ],
+      "expo-font"
     ],
     "extra": {
       "eas": {
-        "projectId": "tinder_caninov1"
+        "projectId": "c870123c-18f6-4512-bbb0-3a557d849019"
       }
     }
   }

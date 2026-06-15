@@ -11,26 +11,28 @@
         h3 { color: #555; }
         p, li { color: #444; }
         .fecha { color: #888; font-size: 14px; }
+        .tag { display: inline-block; background: #FFF0E8; color: #C4622D; padding: 2px 10px; border-radius: 12px; font-size: 12px; font-weight: 700; margin-left: 10px; vertical-align: middle; }
         @media (prefers-color-scheme: dark) {
             body { background: #1a1a1a; color: #ddd; }
             h1 { color: #D4824A; }
             h2 { color: #C4A882; }
             p, li { color: #ccc; }
             .fecha { color: #999; }
+            .tag { background: #3D2B1A; color: #D4824A; }
         }
     </style>
 </head>
 <body>
     <h1>🐾 Política de Privacidad de TinderCanino</h1>
-    <p class="fecha">Última actualización: 13 de junio de 2026</p>
+    <p class="fecha">Última actualización: 14 de junio de 2026</p>
 
     <h2>1. Información que recopilamos</h2>
     <p>Para operar TinderCanino, recopilamos los siguientes datos:</p>
     <ul>
-        <li><strong>Información de registro:</strong> nombre, correo electrónico, contraseña (cifrada)</li>
+        <li><strong>Información de registro:</strong> nombre, correo electrónico, contraseña (cifrada con bcrypt)</li>
         <li><strong>Información del perfil del perro:</strong> nombre, raza, edad, sexo, fotos, descripción</li>
-        <li><strong>Ubicación geográfica:</strong> coordenadas GPS para mostrar perros cercanos</li>
-        <li><strong>Interacciones:</strong> swipes (gusta/no gusta), matches, mensajes</li>
+        <li><strong>Ubicación geográfica:</strong> coordenadas GPS para mostrar perros cercanos (no almacenamos historial de ubicación)</li>
+        <li><strong>Interacciones:</strong> swipes (gusta/no gusta), matches, mensajes de chat</li>
         <li><strong>Reportes y bloqueos:</strong> cuando reportas o bloqueas a otro usuario</li>
     </ul>
 
@@ -41,40 +43,63 @@
         <li>Permitir la comunicación por chat entre matches</li>
         <li>Moderar contenido y gestionar reportes</li>
         <li>Mejorar la aplicación y detectar uso fraudulento</li>
+        <li>No utilizamos tus datos para publicidad ni perfiles comerciales</li>
     </ul>
 
-    <h2>3. Compartición de datos</h2>
+    <h2>3. Base legal para el tratamiento <span class="tag">LOPDP Ecuador</span></h2>
+    <p>De conformidad con la <strong>Ley Orgánica de Protección de Datos Personales (LOPDP)</strong> de la República del Ecuador, la base legal para el tratamiento de tus datos personales es:</p>
+    <ul>
+        <li><strong>Consentimiento explícito:</strong> al registrarte y marcar la casilla de aceptación, nos otorgas tu consentimiento libre, informado, inequívoco y específico para el tratamiento de tus datos conforme a esta política.</li>
+        <li><strong>Ejecución de un contrato:</strong> el tratamiento es necesario para la prestación de los servicios de la plataforma (match, chat, geolocalización).</li>
+        <li><strong>Interés legítimo:</strong> para moderar contenido, prevenir fraudes y mejorar la seguridad de la plataforma.</li>
+    </ul>
+    <p>Puedes revocar tu consentimiento en cualquier momento eliminando tu cuenta desde la aplicación. La revocación no afectará la licitud del tratamiento previo.</p>
+
+    <h2>4. Compartición de datos</h2>
     <p><strong>Con otros usuarios:</strong> tu nombre, fotos del perro, descripción, propósito y distancia son visibles para otros usuarios de la app.</p>
     <p><strong>Con terceros:</strong></p>
     <ul>
-        <li><strong>Supabase</strong> — base de datos y almacenamiento de fotos</li>
-        <li><strong>Expo</strong> — plataforma de desarrollo móvil</li>
-        <li>No vendemos ni compartimos datos personales con anunciantes</li>
+        <li><strong>Supabase</strong> — base de datos y almacenamiento de fotos (servidores AWS en São Paulo, Brasil)</li>
+        <li><strong>Expo</strong> — plataforma de desarrollo móvil (servicios de build y notificaciones)</li>
+        <li>No vendemos, alquilamos ni compartimos datos personales con anunciantes o terceros no esenciales para el funcionamiento de la app</li>
     </ul>
+    <p>Los datos almacenados en Supabase pueden estar sujetos a la legislación brasileña (LGPD) además de la ecuatoriana (LOPDP), por tratarse de servidores en São Paulo.</p>
 
-    <h2>4. Almacenamiento y seguridad</h2>
-    <p>Tus datos se almacenan en servidores de Supabase (PostgreSQL) con cifrado en tránsito y en reposo. Las contraseñas se almacenan cifradas con bcrypt. Solo personal autorizado tiene acceso a los servidores.</p>
+    <h2>5. Transferencia internacional de datos <span class="tag">LOPDP Ecuador</span></h2>
+    <p>Los datos personales recogidos en Ecuador se almacenan en servidores en Brasil (AWS São Paulo). Esta transferencia internacional se ampara en tu consentimiento explícito y en la necesidad de prestar el servicio. Supabase cumple con estándares internacionales de seguridad (SOC 2, ISO 27001).</p>
 
-    <h2>5. Retención de datos</h2>
-    <p>Conservamos tus datos mientras tengas una cuenta activa. Si eliminas tu cuenta, tus datos se eliminan en un plazo de 30 días. Los mensajes de chat y matches se eliminan junto con tu cuenta.</p>
+    <h2>6. Almacenamiento y seguridad</h2>
+    <p>Tus datos se almacenan en servidores de Supabase (PostgreSQL) con cifrado en tránsito (TLS 1.3) y en reposo (AES-256). Las contraseñas se almacenan cifradas con bcrypt. Solo personal autorizado tiene acceso a los servidores. Implementamos medidas técnicas y organizativas para proteger tus datos contra acceso no autorizado, pérdida o destrucción.</p>
 
-    <h2>6. Tus derechos</h2>
+    <h2>7. Retención de datos</h2>
+    <p>Conservamos tus datos mientras tengas una cuenta activa. Si eliminas tu cuenta, tus datos se eliminan en un plazo de 30 días. Los mensajes de chat y matches se eliminan junto con tu cuenta. Los registros de reportes anonimizados pueden conservarse por razones de seguridad hasta 90 días.</p>
+
+    <h2>8. Tus derechos <span class="tag">LOPDP Ecuador</span></h2>
+    <p>De conformidad con la LOPDP, tienes los siguientes derechos (ARCO+):</p>
     <ul>
-        <li><strong>Acceso:</strong> puedes ver tus datos en la pantalla de perfil</li>
-        <li><strong>Corrección:</strong> puedes editar tu perfil en cualquier momento</li>
-        <li><strong>Eliminación:</strong> puedes eliminar tu cuenta desde configuración</li>
-        <li><strong>Portabilidad:</strong> solicita una copia de tus datos escribiéndonos</li>
+        <li><strong>Acceso:</strong> puedes ver tus datos en la pantalla de perfil en cualquier momento</li>
+        <li><strong>Corrección:</strong> puedes editar tu perfil desde la app — nombre, fotos, descripción, etc.</li>
+        <li><strong>Eliminación:</strong> puedes eliminar tu cuenta desde la app (Perfil → Configuración). También puedes solicitarlo por email</li>
+        <li><strong>Oposición:</strong> puedes oponerte al tratamiento de tus datos para fines específicos contactándonos</li>
+        <li><strong>Portabilidad:</strong> solicita una copia de tus datos escribiéndonos a privacidad@tindercanino.app</li>
+        <li><strong>Revocación del consentimiento:</strong> puedes revocar tu consentimiento eliminando tu cuenta</li>
     </ul>
+    <p>Ejercer tus derechos es gratuito. Responderemos a tu solicitud en un plazo máximo de 15 días hábiles.</p>
 
-    <h2>7. Menores de edad</h2>
-    <p>TinderCanino está diseñado para mayores de 18 años. No recopilamos intencionalmente datos de menores. Si descubrimos que un menor ha creado una cuenta, la eliminaremos inmediatamente.</p>
+    <h2>9. Menores de edad</h2>
+    <p>TinderCanino está diseñado para mayores de 18 años. No recopilamos intencionalmente datos de menores de edad. Si descubrimos que un menor ha creado una cuenta, la eliminaremos inmediatamente y borraremos sus datos.</p>
 
-    <h2>8. Cambios a esta política</h2>
-    <p>Notificaremos cambios significativos a través de la aplicación o por correo electrónico. El uso continuado de la app después de los cambios constituye aceptación de la nueva política.</p>
+    <h2>10. Cambios a esta política</h2>
+    <p>Notificaremos cambios significativos a través de la aplicación (pantalla de inicio) o por correo electrónico. El uso continuado de la app después de los cambios constituye aceptación de la nueva política. Las versiones anteriores están disponibles solicitándolas por email.</p>
 
-    <h2>9. Contacto</h2>
-    <p>Para preguntas sobre privacidad o para ejercer tus derechos, escríbenos a:</p>
-    <p><strong>Email:</strong> privacidad@tindercanino.app</p>
-    <p><strong>Última revisión:</strong> 13 junio 2026</p>
+    <h2>11. Contacto y autoridad de control <span class="tag">LOPDP Ecuador</span></h2>
+    <p>Para preguntas sobre privacidad, ejercer tus derechos, o presentar una queja:</p>
+    <p><strong>Email:</strong> <a href="mailto:privacidad@tindercanino.app">privacidad@tindercanino.app</a></p>
+    <p><strong>Tiempo de respuesta:</strong> máximo 15 días hábiles</p>
+    <p>Si consideras que no hemos tratado tus datos personales adecuadamente, puedes presentar una reclamación ante la <strong>Autoridad de Protección de Datos Personales del Ecuador</strong>.</p>
+
+    <hr style="margin: 30px 0; border: none; border-top: 1px solid #E0CAB4;">
+    <p class="fecha">Esta política cumple con la Ley Orgánica de Protección de Datos Personales (LOPDP) de Ecuador y el Reglamento General de Protección de Datos (RGPD) de la Unión Europea en sus principios esenciales.</p>
+    <p class="fecha">Última revisión: 14 de junio de 2026</p>
 </body>
 </html>

@@ -8,6 +8,7 @@ import { apiWithRefresh } from '../api/client';
 import MatchModal from '../components/MatchModal';
 import FilterModal from '../components/FilterModal';
 import { colors, spacing, radius, shadows, typography } from '../styles/theme';
+import * as Location from 'expo-location';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
 const SWIPE_THRESHOLD = 120;
@@ -63,11 +64,14 @@ export default function SwipeScreen({ navigation }) {
   const [matchModal, setMatchModal] = useState(null);
   const [filterVisible, setFilterVisible] = useState(false);
   const [filtros, setFiltros] = useState({});
+  const [miUbicacion, setMiUbicacion] = useState(null);
+  const [gpsStatus, setGpsStatus] = useState('obteniendo');
+  const [radioActual, setRadioActual] = useState(500);
   const position = useRef(new Animated.ValueXY()).current;
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    cargarPerros();
+    obtenerUbicacion();
     Animated.timing(fadeAnim, {
       toValue: 1,
       duration: 400,
@@ -75,12 +79,42 @@ export default function SwipeScreen({ navigation }) {
     }).start();
   }, []);
 
+  useEffect(() => {
+    if (miUbicacion) {
+      cargarPerros();
+    }
+  }, [miUbicacion]);
+
+  const obtenerUbicacion = async () => {
+    try {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        console.log('[Swipe] GPS denegado, usando coords por defecto');
+        setMiUbicacion({ lat: -2.170, lng: -79.922 });
+        setGpsStatus('denegado');
+        return;
+      }
+      const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High });
+      const coords = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+      console.log('[Swipe] GPS real:', coords.lat.toFixed(4), coords.lng.toFixed(4));
+      setMiUbicacion(coords);
+      setGpsStatus('ok');
+    } catch (error) {
+      console.log('[Swipe] Error GPS:', error);
+      setMiUbicacion({ lat: -2.170, lng: -79.922 });
+      setGpsStatus('error');
+    }
+  };
+
   const cargarPerros = async () => {
+    if (!miUbicacion) return;
     setLoading(true);
     try {
       const qsParts = [];
+      qsParts.push('latitud=' + miUbicacion.lat.toFixed(6));
+      qsParts.push('longitud=' + miUbicacion.lng.toFixed(6));
+      qsParts.push('distanciaMax=' + 500); // Todo Ecuador
       if (filtros.proposito) qsParts.push('proposito=' + encodeURIComponent(filtros.proposito));
-      if (filtros.distanciaMax) qsParts.push('distanciaMax=' + filtros.distanciaMax);
       if (filtros.edadMax) qsParts.push('edadMax=' + filtros.edadMax);
       const qs = qsParts.length ? '?' + qsParts.join('&') : '';
       const data = await apiWithRefresh('GET', `/perros/explorar${qs}`);
@@ -112,9 +146,8 @@ export default function SwipeScreen({ navigation }) {
   };
 
   const calcularDistancia = (lat2, lng2) => {
-    if (!lat2 || !lng2) return '?';
-    const lat1 = -2.170;
-    const lng1 = -79.922;
+    if (!lat2 || !lng2 || !miUbicacion) return '?';
+    const { lat: lat1, lng: lng1 } = miUbicacion;
     const R = 6371;
     const dLat = (lat2 - lat1) * Math.PI / 180;
     const dLng = (lng2 - lng1) * Math.PI / 180;
@@ -324,7 +357,7 @@ export default function SwipeScreen({ navigation }) {
         <View style={styles.loadingCard}>
           <MaterialIcons name="pets" size={40} color={colors.accent} />
           <ActivityIndicator size="large" color={colors.primary} style={{ marginTop: 16 }} />
-          <Text style={styles.loadingText}>Buscando perros cerca...</Text>
+          <Text style={styles.loadingText}>Buscando perros...</Text>
         </View>
       </View>
     );
@@ -335,10 +368,12 @@ export default function SwipeScreen({ navigation }) {
       <View style={styles.container}>
         <View style={styles.emptyCard}>
           <MaterialIcons name="pets" size={50} color={colors.border} />
-          <Text style={styles.emptyTitle}>¡Ups! No hay más perros</Text>
+          <Text style={styles.emptyTitle}>
+            {perros.length === 0 ? 'No hay perros en tu zona 🐾' : '¡Ups! No hay más perros'}
+          </Text>
           <Text style={styles.emptyText}>
             {perros.length === 0
-              ? 'No encontramos perros cerca.\nIntenta ajustar los filtros o vuelve más tarde.'
+              ? `Buscamos hasta ${radioActual} km a la redonda y no encontramos perros.\nComparte la app con otros dueños o vuelve más tarde.`
               : 'Ya viste todos los perros disponibles.\nVuelve pronto, seguro hay más.'}
           </Text>
           <Pressable
@@ -468,6 +503,14 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
     ...shadows.sm,
+  },
+  radioBadge: {
+    flexDirection: 'row', alignItems: 'center', gap: 3,
+    backgroundColor: '#FFF3E0', borderRadius: 12,
+    paddingHorizontal: 8, paddingVertical: 3,
+  },
+  radioBadgeText: {
+    fontSize: 11, fontWeight: '700', color: colors.accentDark,
   },
   filtroActivoDot: {
     width: 8,

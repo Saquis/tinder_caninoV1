@@ -8,10 +8,12 @@ import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { api } from '../api/client';
 import { colors, spacing, radius, shadows, typography } from '../styles/theme';
+import { useNavigation } from '@react-navigation/native';
 
 const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[A-Za-z\d!@#$%^&*()_+]{6,}$/;
 
-export default function RegisterScreen({ navigation, onRegister }) {
+export default function RegisterScreen({ navigation: navProp, onRegister }) {
+  const navigation = navProp || useNavigation();
   const [nombre, setNombre] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -19,6 +21,7 @@ export default function RegisterScreen({ navigation, onRegister }) {
   const [loading, setLoading] = useState(false);
   const [showPass, setShowPass] = useState(false);
   const [showConf, setShowConf] = useState(false);
+  const [aceptaTerminos, setAceptaTerminos] = useState(false);
 
   const handleRegister = async () => {
     if (!nombre.trim() || nombre.trim().length < 2) {
@@ -27,6 +30,10 @@ export default function RegisterScreen({ navigation, onRegister }) {
     }
     if (!email.trim()) {
       Alert.alert('Error', 'El correo es obligatorio');
+      return;
+    }
+    if (!aceptaTerminos) {
+      Alert.alert('Acepta los términos', 'Debes aceptar los Términos de Servicio y la Política de Privacidad para continuar');
       return;
     }
     if (!passwordRegex.test(password)) {
@@ -178,6 +185,28 @@ export default function RegisterScreen({ navigation, onRegister }) {
               <FontAwesome name="google" size={18} color={colors.accentDark} />
               <Text style={styles.googleBtnText}>Google</Text>
             </Pressable>
+
+            {/* Aceptar términos */}
+            <View style={styles.terminosRow}>
+              <Pressable
+                style={[styles.checkbox, aceptaTerminos && styles.checkboxChecked]}
+                onPress={() => setAceptaTerminos(!aceptaTerminos)}
+              >
+                {aceptaTerminos && (
+                  <MaterialIcons name="check" size={16} color={colors.textWhite} />
+                )}
+              </Pressable>
+              <Text style={styles.terminosText}>
+                Acepto los{' '}
+                <Text style={styles.terminosLink} onPress={() => navigation.navigate('Terms')}>
+                  Términos de Servicio
+                </Text>{' '}
+                y la{' '}
+                <Text style={styles.terminosLink} onPress={() => navigation.navigate('Privacy')}>
+                  Política de Privacidad
+                </Text>
+              </Text>
+            </View>
           </View>
 
           {/* Link a login */}
@@ -328,5 +357,38 @@ const styles = StyleSheet.create({
     color: colors.primary,
     fontSize: 14,
     fontWeight: '600',
+  },
+  terminosRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: spacing.sm,
+    marginTop: spacing.xl,
+    paddingLeft: spacing.xs,
+  },
+  checkbox: {
+    width: 22,
+    height: 22,
+    borderRadius: 4,
+    borderWidth: 2,
+    borderColor: colors.accent,
+    backgroundColor: colors.bgCard,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 1,
+  },
+  checkboxChecked: {
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
+  },
+  terminosText: {
+    flex: 1,
+    fontSize: 12,
+    color: colors.textLight,
+    lineHeight: 19,
+  },
+  terminosLink: {
+    color: colors.primary,
+    fontWeight: '700',
+    textDecorationLine: 'underline',
   },
 });

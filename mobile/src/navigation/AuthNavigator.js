@@ -3,6 +3,8 @@ import { createStackNavigator } from '@react-navigation/stack';
 import LoginScreen from '../screens/LoginScreen';
 import RegisterScreen from '../screens/RegisterScreen';
 import CrearPerfilPerroScreen from '../screens/CrearPerfilPerroScreen';
+import PrivacyScreen from '../screens/PrivacyScreen';
+import TermsScreen from '../screens/TermsScreen';
 import { colors } from '../styles/theme';
 
 const Stack = createStackNavigator();
@@ -56,6 +58,16 @@ export default function AuthNavigator({ onLogin, forceScreen, onLogout }) {
             headerStyle: { backgroundColor: colors.bgCard },
             headerTintColor: colors.primary,
           }}
+        />
+        <Stack.Screen
+          name="Privacy"
+          component={PrivacyScreen}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="Terms"
+          component={TermsScreen}
+          options={{ headerShown: false }}
         />
         <Stack.Screen
           name="CrearPerfilPerro"

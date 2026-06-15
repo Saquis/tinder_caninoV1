@@ -9,8 +9,10 @@ import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import FontAwesome from 'react-native-vector-icons/FontAwesome';
 import * as ImagePicker from 'expo-image-picker';
 import { colors, spacing, radius, shadows, typography } from '../styles/theme';
+import { useNavigation } from '@react-navigation/native';
 
-export default function PerfilScreen({ onLogout }) {
+export default function PerfilScreen({ onLogout, navigation }) {
+  const nav = navigation || useNavigation();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [subiendoFoto, setSubiendoFoto] = useState(false);
@@ -380,6 +382,28 @@ export default function PerfilScreen({ onLogout }) {
         )}
       </Pressable>
 
+      {/* Legal links */}
+      <View style={styles.legalSection}>
+        <Pressable
+          style={styles.legalRow}
+          onPress={() => nav.navigate('Terms')}
+        >
+          <MaterialIcons name="description" size={18} color={colors.accent} />
+          <Text style={styles.legalRowText}>Términos de Servicio</Text>
+          <MaterialIcons name="chevron-right" size={18} color={colors.textLight} />
+        </Pressable>
+        <Pressable
+          style={styles.legalRow}
+          onPress={() => nav.navigate('Privacy')}
+        >
+          <MaterialIcons name="security" size={18} color={colors.accent} />
+          <Text style={styles.legalRowText}>Política de Privacidad</Text>
+          <MaterialIcons name="chevron-right" size={18} color={colors.textLight} />
+        </Pressable>
+      </View>
+
+      <View style={styles.divider} />
+
       {/* Cerrar sesión */}
       <Pressable
         style={styles.logoutButton}
@@ -679,6 +703,26 @@ const styles = StyleSheet.create({
     color: colors.textWhite,
     fontSize: 16,
     fontWeight: '700',
+  },
+  legalSection: {
+    gap: spacing.sm,
+    marginBottom: spacing.lg,
+  },
+  legalRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.bgCard,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: spacing.md,
+    gap: spacing.md,
+  },
+  legalRowText: {
+    flex: 1,
+    color: colors.text,
+    fontSize: 14,
+    fontWeight: '600',
   },
   logoutButton: {
     backgroundColor: colors.error,
