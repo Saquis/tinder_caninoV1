@@ -3,7 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 // Si estás en emulador Android: 10.0.2.2
 // Si estás en celu físico con tunnel: la IP de tu PC en la red local
 // Si despliegas backend: la URL de Railway
-const API_URL = 'http://192.168.100.4:3000/api';
+const API_URL = 'https://tindercaninov1-production.up.railway.app/api';
 const TOKEN_KEY = 'access_token';
 const REFRESH_KEY = 'refresh_token';
 
