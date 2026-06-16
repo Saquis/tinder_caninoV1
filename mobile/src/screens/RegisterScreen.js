@@ -6,7 +6,7 @@ import {
 import FontAwesome from 'react-native-vector-icons/FontAwesome';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { api } from '../api/client';
+import { api, saveTokens } from '../api/client';
 import { colors, spacing, radius, shadows, typography } from '../styles/theme';
 import { useNavigation } from '@react-navigation/native';
 
@@ -55,6 +55,7 @@ export default function RegisterScreen({ navigation: navProp, onRegister }) {
         email: email.trim().toLowerCase(),
         password,
       });
+      await saveTokens(data.accessToken, data.refreshToken);
       await onRegister(data.tienePerro !== undefined ? data.tienePerro : false);
     } catch (error) {
       const msg = typeof error === 'string' ? error
