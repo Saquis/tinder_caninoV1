@@ -53,12 +53,14 @@
           }
         }
       ],
-      "expo-font"
+      "expo-font",
+      "expo-web-browser"
     ],
     "extra": {
       "eas": {
         "projectId": "c870123c-18f6-4512-bbb0-3a557d849019"
-      }
+      },
+      "googleClientId": ""
     }
   }
 }

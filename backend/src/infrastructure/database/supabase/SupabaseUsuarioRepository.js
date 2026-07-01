@@ -79,10 +79,11 @@ class SupabaseUsuarioRepository extends UsuarioRepository {
       .from('perros')
       .select('id')
       .eq('usuario_id', usuarioId)
-      .maybeSingle();
+      .eq('activo', true)
+      .limit(1);
 
     if (error) throw new Error(`Error al buscar perro: ${error.message}`);
-    return data;
+    return (data && data.length > 0) ? data[0] : null;
   }
 
   _mapear(data) {

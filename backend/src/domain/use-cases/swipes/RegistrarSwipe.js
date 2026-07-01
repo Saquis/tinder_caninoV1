@@ -14,12 +14,16 @@ class RegistrarSwipe {
 
   async execute({ usuarioOrigen, usuarioDestino, tipo }) {
     // 1. Validar que destino tenga perro
-    const perroDestino = await this.perroRepository.findByUsuarioId(usuarioDestino);
-    if (!perroDestino) throw new (require('../../entities/Usuario').AppError)('El usuario destino no tiene un perro registrado', 400);
+    const perrosDestino = await this.perroRepository.findByUsuarioId(usuarioDestino);
+    if (!perrosDestino || perrosDestino.length === 0) {
+      throw new (require('../../entities/Usuario').AppError)('El usuario destino no tiene un perro registrado', 400);
+    }
 
     // 2. Validar que origen tenga perro y no haya swipado ya
-    const perroOrigen = await this.perroRepository.findByUsuarioId(usuarioOrigen);
-    if (!perroOrigen) throw new (require('../../entities/Usuario').AppError)('Debes registrar tu perro primero', 400);
+    const perrosOrigen = await this.perroRepository.findByUsuarioId(usuarioOrigen);
+    if (!perrosOrigen || perrosOrigen.length === 0) {
+      throw new (require('../../entities/Usuario').AppError)('Debes registrar tu perro primero', 400);
+    }
 
     const existente = await this.swipeRepository.findSwipe(usuarioOrigen, usuarioDestino);
     if (existente) throw new (require('../../entities/Usuario').AppError)('Ya swipeaste a este usuario', 409);

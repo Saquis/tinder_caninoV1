@@ -10,8 +10,11 @@ class ExplorarPerros {
   }
 
   async execute({ usuarioId, latitud, longitud, pagina = 0, bloqueadosIds = [], proposito, raza, edadMax, distanciaMax }) {
-    const miPerro = await this.perroRepository.findByUsuarioId(usuarioId);
-    if (!miPerro) throw new (require('../../entities/Usuario').AppError)('Debes crear el perfil de tu perro primero', 400);
+    const misPerros = await this.perroRepository.findByUsuarioId(usuarioId);
+    if (!misPerros || misPerros.length === 0) {
+      throw new (require('../../entities/Usuario').AppError)('Debes crear el perfil de tu perro primero', 400);
+    }
+    const miPerro = misPerros[0];
 
     // Obtener IDs ya swipedaos por este usuario
     const yaSwipedaos = (await this.swipeRepository.findByUsuarioOrigen(usuarioId))

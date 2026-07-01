@@ -37,6 +37,10 @@ module.exports = {
     refreshExpiresIn: process.env.JWT_REFRESH_EXPIRES_IN || '7d',
   },
 
+  google: {
+    clientId: process.env.GOOGLE_CLIENT_ID || '',
+  },
+
   app: {
     maxDistanciaKm: parseInt(process.env.MAX_DISTANCIA_KM, 10) || 50,
     maxFotosGratis: parseInt(process.env.MAX_FOTOS_GRATIS, 10) || 2,

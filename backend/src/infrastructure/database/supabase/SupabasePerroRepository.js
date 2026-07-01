@@ -29,7 +29,7 @@ class SupabasePerroRepository extends PerroRepository {
   }
 
   async findById(id) {
-    const { data, error } = await supabaseAdmin.from('perros').select('*').eq('id', id).single();
+    const { data, error } = await supabaseAdmin.from('perros').select('*').eq('id', id).eq('activo', true).single();
     if (error && error.code === 'PGRST116') return null;
     if (error) throw new Error(`Error al buscar perro: ${error.message}`);
     return this._mapear(data);
@@ -41,28 +41,17 @@ class SupabasePerroRepository extends PerroRepository {
       .select('*')
       .eq('usuario_id', usuarioId)
       .eq('activo', true)
-      .single();
+      .order('creado_en', { ascending: true });
 
-    if (error && error.code === 'PGRST116') return null;
-    if (error) throw new Error(`Error al buscar perro por usuario: ${error.message}`);
-    return this._mapear(data);
+    if (error) throw new Error(`Error al buscar perros por usuario: ${error.message}`);
+    return (data || []).map(r => this._mapear(r));
   }
 
   async findCercanos({ latitud, longitud, distanciaKm, excluirIds = [], limite = 20, offset = 0, proposito, raza, edadMax }) {
-    // Usamos la función de distancia de PostGIS o filtro aproximado
-    // Sin PostGIS: filtramos por diff de lat/lng (1° ≈ 111km)
-    const diffGrados = distanciaKm / 111;
-
     let query = supabaseAdmin
       .from('perros')
       .select('*', { count: 'exact' })
       .eq('activo', true)
-      .not('latitud', 'is', null)
-      .not('longitud', 'is', null)
-      .gte('latitud', latitud - diffGrados)
-      .lte('latitud', latitud + diffGrados)
-      .gte('longitud', longitud - diffGrados)
-      .lte('longitud', longitud + diffGrados)
       .order('creado_en', { ascending: false })
       .range(offset, offset + limite - 1);
 

@@ -1,7 +1,7 @@
-// Usuarios Controller — Perfil, reportes, bloqueos
+// Usuarios Controller — Perfil, reportes, bloqueos, eliminación completa
 // Capa: entry-points/api/controllers
 
-function crearUsuariosController(usuarioRepository, reporteRepository, bloqueoRepository) {
+function crearUsuariosController(usuarioRepository, reporteRepository, bloqueoRepository, perroRepository, storageService) {
   return {
     async perfil(req, res, next) {
       try {
@@ -24,8 +24,32 @@ function crearUsuariosController(usuarioRepository, reporteRepository, bloqueoRe
 
     async eliminar(req, res, next) {
       try {
+        console.log('[UsuariosController] Eliminando cuenta completa de usuario:', req.usuario.id);
+
+        // 1. Buscar TODOS los perros del usuario
+        const perros = await perroRepository.findByUsuarioId(req.usuario.id);
+        if (perros && perros.length > 0) {
+          for (const perro of perros) {
+            // 2. Eliminar fotos del Storage
+            for (const foto of perro.fotos || []) {
+              try {
+                await storageService.eliminarFoto(foto.path);
+                console.log('[UsuariosController] Foto eliminada:', foto.path);
+              } catch (e) {
+                console.error('[UsuariosController] Error al eliminar foto:', foto.path, e.message);
+              }
+            }
+            // 3. Soft delete del perro
+            await perroRepository.delete(perro.id);
+            console.log('[UsuariosController] Perro eliminado:', perro.id);
+          }
+        }
+
+        // 4. Soft delete del usuario
         await usuarioRepository.delete(req.usuario.id);
-        res.json({ message: 'Cuenta desactivada' });
+        console.log('[UsuariosController] Cuenta eliminada');
+
+        res.json({ message: 'Cuenta y perfil eliminados correctamente' });
       } catch (e) { next(e); }
     },
 

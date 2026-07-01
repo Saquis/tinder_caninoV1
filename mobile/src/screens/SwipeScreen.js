@@ -7,6 +7,7 @@ import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { apiWithRefresh } from '../api/client';
 import MatchModal from '../components/MatchModal';
 import FilterModal from '../components/FilterModal';
+import PerroDetailModal from '../components/PerroDetailModal';
 import { colors, spacing, radius, shadows, typography } from '../styles/theme';
 import * as Location from 'expo-location';
 
@@ -62,6 +63,7 @@ export default function SwipeScreen({ navigation }) {
   const [loading, setLoading] = useState(true);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [matchModal, setMatchModal] = useState(null);
+  const [perroDetail, setPerroDetail] = useState(null);
   const [filterVisible, setFilterVisible] = useState(false);
   const [filtros, setFiltros] = useState({});
   const [miUbicacion, setMiUbicacion] = useState(null);
@@ -311,6 +313,13 @@ export default function SwipeScreen({ navigation }) {
               </Text>
             )}
           </View>
+          <Pressable
+            style={styles.verPerfilBtn}
+            onPress={() => setPerroDetail(perro)}
+          >
+            <MaterialIcons name="info-outline" size={16} color={colors.primary} />
+            <Text style={styles.verPerfilText}>Ver perfil completo</Text>
+          </Pressable>
         </ScrollView>
 
         {/* Overlay LIKE */}
@@ -455,6 +464,14 @@ export default function SwipeScreen({ navigation }) {
         matchData={matchModal}
         onCerrar={() => setMatchModal(null)}
         onAbrirChat={handleAbrirChat}
+      />
+
+      {/* Perfil detalle */}
+      <PerroDetailModal
+        visible={!!perroDetail}
+        perro={perroDetail}
+        km={perroDetail ? calcularDistancia(perroDetail.latitud, perroDetail.longitud) : null}
+        onCerrar={() => setPerroDetail(null)}
       />
     </View>
   );
@@ -650,6 +667,24 @@ const styles = StyleSheet.create({
     color: colors.text,
     lineHeight: 20,
     fontWeight: '400',
+  },
+  verPerfilBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'center',
+    gap: spacing.xs,
+    marginTop: spacing.sm,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.lg,
+    borderRadius: radius.full,
+    backgroundColor: colors.bg,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  verPerfilText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: colors.primary,
   },
   overlay: {
     position: 'absolute',

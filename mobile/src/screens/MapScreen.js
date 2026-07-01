@@ -1,6 +1,7 @@
 // MapScreen v1 — View-based map (decorativo, sin librerías nativas)
 // GPS real + API real + lista "Cerca de ti"
 import React, { useState, useEffect, useRef } from 'react';
+import PerroDetailModal from '../components/PerroDetailModal';
 import {
   View, Text, Pressable, StyleSheet, ScrollView, Image, Dimensions, ActivityIndicator
 } from 'react-native';
@@ -24,6 +25,7 @@ export default function MapScreen() {
   const [miUbicacion, setMiUbicacion] = useState(null);
   const [gpsStatus, setGpsStatus] = useState('obteniendo');
   const [selectedDog, setSelectedDog] = useState(null);
+  const [perroDetail, setPerroDetail] = useState(null);
 
   useEffect(() => { obtenerUbicacion(); }, []);
 
@@ -175,6 +177,13 @@ export default function MapScreen() {
                 <MaterialIcons name="close" size={18} color={colors.textLight} />
               </Pressable>
             </View>
+            <Pressable
+              style={styles.verPerfilBtn}
+              onPress={() => { setPerroDetail(selectedDog); }}
+            >
+              <MaterialIcons name="info-outline" size={14} color={colors.primary} />
+              <Text style={styles.verPerfilText}>Ver perfil completo</Text>
+            </Pressable>
           </View>
         </View>
       )}
@@ -233,6 +242,14 @@ export default function MapScreen() {
         </ScrollView>
       </View>
     </View>
+
+      {/* Perfil detalle */}
+      <PerroDetailModal
+        visible={!!perroDetail}
+        perro={perroDetail}
+        km={perroDetail && miUbicacion ? calcularDist(miUbicacion.lat, miUbicacion.lng, perroDetail.latitud, perroDetail.longitud) : null}
+        onCerrar={() => setPerroDetail(null)}
+      />
   );
 }
 
@@ -393,6 +410,24 @@ const styles = StyleSheet.create({
   previewInfo: { flex: 1 },
   previewName: { fontSize: 15, fontWeight: '700', color: colors.text },
   previewRaza: { fontSize: 12, color: colors.textLight, marginTop: 2 },
+  verPerfilBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'center',
+    gap: spacing.xs,
+    marginTop: spacing.sm,
+    paddingVertical: spacing.xs,
+    paddingHorizontal: spacing.md,
+    borderRadius: radius.full,
+    backgroundColor: colors.bg,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  verPerfilText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: colors.primary,
+  },
   previewClose: { padding: spacing.sm },
 
   // Lista cercanos

@@ -3,11 +3,13 @@
 
 const { RegistrarUsuario } = require('../../../domain/use-cases/auth/RegistrarUsuario');
 const { AutenticarUsuario } = require('../../../domain/use-cases/auth/AutenticarUsuario');
+const { AutenticarConGoogle } = require('../../../domain/use-cases/auth/AutenticarConGoogle');
 const { RenovarToken } = require('../../../domain/use-cases/auth/RenovarToken');
 
 function crearAuthController(usuarioRepository, authService, refreshTokenRepository) {
   const registrar = new RegistrarUsuario(usuarioRepository, authService, refreshTokenRepository);
   const autenticar = new AutenticarUsuario(usuarioRepository, authService);
+  const googleAuth = new AutenticarConGoogle(usuarioRepository, authService);
   const renovar = new RenovarToken(usuarioRepository, authService, refreshTokenRepository);
 
   return {
@@ -31,6 +33,15 @@ function crearAuthController(usuarioRepository, authService, refreshTokenReposit
       try {
         const { refreshToken } = req.body;
         const resultado = await renovar.execute({ refreshToken });
+        res.json(resultado);
+      } catch (error) { next(error); }
+    },
+
+    async googleLogin(req, res, next) {
+      try {
+        const { idToken } = req.body;
+        if (!idToken) return res.status(400).json({ error: { message: 'Token de Google requerido' } });
+        const resultado = await googleAuth.execute({ idToken });
         res.json(resultado);
       } catch (error) { next(error); }
     },

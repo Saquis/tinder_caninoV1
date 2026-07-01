@@ -12,6 +12,7 @@ function crearAuthRoutes(usuarioRepository, authService, refreshTokenRepository)
 
   router.post('/registro', controller.registro);
   router.post('/login', controller.login);
+  router.post('/google', controller.googleLogin);
   router.post('/refresh', controller.refresh);
   router.post('/logout', auth.requiereAuth, controller.logout);
 

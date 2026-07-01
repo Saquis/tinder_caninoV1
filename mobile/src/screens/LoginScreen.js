@@ -8,6 +8,11 @@ import { api, saveTokens } from '../api/client';
 import FontAwesome from 'react-native-vector-icons/FontAwesome';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import AnimatedDog from '../components/AnimatedDog';
+import * as WebBrowser from 'expo-web-browser';
+import * as Google from 'expo-auth-session/providers/google';
+import Constants from 'expo-constants';
+
+WebBrowser.maybeCompleteAuthSession();
 import { colors, spacing, radius, shadows, typography } from '../styles/theme';
 
 export default function LoginScreen({ navigation, onLogin }) {
@@ -15,6 +20,52 @@ export default function LoginScreen({ navigation, onLogin }) {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
+
+  // Google Auth
+  const googleClientId = Constants.expoConfig?.extra?.googleClientId;
+  const [googleRequest, googleResponse, googlePromptAsync] = Google.useAuthRequest({
+    clientId: googleClientId || undefined,
+    responseType: 'id_token',
+  });
+
+  // Procesar respuesta de Google
+  useEffect(() => {
+    if (googleResponse?.type === 'success' && googleResponse?.params?.id_token) {
+      handleGoogleToken(googleResponse.params.id_token);
+    }
+  }, [googleResponse]);
+
+  const handleGoogleToken = async (idToken) => {
+    setGoogleLoading(true);
+    try {
+      const data = await api('POST', '/auth/google', { idToken });
+      if (data.accessToken) {
+        await saveTokens(data.accessToken, data.refreshToken);
+        onLogin(data.tienePerro);
+      }
+    } catch (error) {
+      const msg = error?.error?.message || error?.message || 'Error al iniciar sesión con Google';
+      Alert.alert('Error', msg);
+    } finally {
+      setGoogleLoading(false);
+    }
+  };
+
+  const handleGooglePress = () => {
+    if (!googleClientId) {
+      Alert.alert(
+        'Google pendiente',
+        'El login con Google necesita configuración. Agrega GOOGLE_CLIENT_ID en app.json extra.'
+      );
+      return;
+    }
+    if (googleLoading) return;
+    googlePromptAsync({ useProxy: true }).catch(err => {
+      console.error('[Google] Error al abrir auth:', err);
+      Alert.alert('Error', 'No se pudo abrir la pantalla de Google');
+    });
+  };
 
   // Animaciones
   const logoAnim = useRef(new Animated.Value(0)).current;
@@ -192,10 +243,15 @@ export default function LoginScreen({ navigation, onLogin }) {
 
           {/* Google */}
           <Pressable
-            style={({ pressed }) => [styles.googleBtn, pressed && styles.googleBtnPressed]}
-            onPress={() => Alert.alert('Próximamente', 'Login con Google disponible pronto')}
+            style={({ pressed }) => [styles.googleBtn, pressed && styles.googleBtnPressed, googleLoading && { opacity: 0.5 }]}
+            onPress={handleGooglePress}
+            disabled={googleLoading}
           >
-            <FontAwesome name="google" size={18} color={colors.text} />
+            {googleLoading ? (
+              <ActivityIndicator size="small" color={colors.text} />
+            ) : (
+              <FontAwesome name="google" size={18} color={colors.text} />
+            )}
             <Text style={styles.googleBtnText}>Google</Text>
           </Pressable>
         </Animated.View>

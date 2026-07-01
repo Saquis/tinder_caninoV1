@@ -1,5 +1,6 @@
 // PerfilScreen — Galería de fotos + Edición de perfil
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { useFocusEffect } from '@react-navigation/native';
 import {
   View, Text, TextInput, Pressable, StyleSheet, Alert,
   ActivityIndicator, ScrollView, Switch, Image, FlatList
@@ -18,6 +19,8 @@ export default function PerfilScreen({ onLogout, navigation }) {
   const [subiendoFoto, setSubiendoFoto] = useState(false);
   const [perro, setPerro] = useState(null);
   const [perroId, setPerroId] = useState(null);
+  const [perrosList, setPerrosList] = useState([]);
+  const [perroIndex, setPerroIndex] = useState(0);
 
   // Campos del perfil
   const [nombre, setNombre] = useState('');
@@ -33,7 +36,6 @@ export default function PerfilScreen({ onLogout, navigation }) {
   const [fotos, setFotos] = useState([]);
 
   // Estado de eliminación
-  const [eliminandoPerfil, setEliminandoPerfil] = useState(false);
   const [eliminandoCuenta, setEliminandoCuenta] = useState(false);
 
   const propositos = [
@@ -43,31 +45,50 @@ export default function PerfilScreen({ onLogout, navigation }) {
     { key: 'todo', label: 'Todo', icon: 'stars' },
   ];
 
-  useEffect(() => {
-    console.log('[Perfil] Montado, cargando datos...');
-    cargarPerfil();
-  }, []);
+  // Recargar al ganar foco (vuelta de CrearPerfilPerro, etc.)
+  useFocusEffect(
+    useCallback(() => {
+      console.log('[Perfil] Focus, cargando datos...');
+      cargarPerfil();
+    }, [])
+  );
+
+  const llenarFormulario = (perroData) => {
+    if (!perroData) return;
+    setPerro(perroData);
+    setPerroId(perroData.id);
+    setNombre(perroData.nombre || '');
+    setRaza(perroData.raza || '');
+    setEdadTexto(perroData.edadMeses ? String(perroData.edadMeses) : '');
+    setSexo(perroData.sexo || null);
+    setCastrado(perroData.castrado || false);
+    setDescripcion(perroData.descripcion || '');
+    setProposito(perroData.proposito || null);
+    setFotoPrincipal(perroData.fotoPrincipal || null);
+    setFotos(perroData.fotos || []);
+  };
 
   const cargarPerfil = async () => {
     try {
-      const data = await api('GET', '/perros/mi-perro');
-      console.log('[Perfil] Datos cargados, fotos:', data.fotos?.length || 0);
-      setPerro(data);
-      setPerroId(data.id);
-      setNombre(data.nombre || '');
-      setRaza(data.raza || '');
-      setEdadTexto(data.edadMeses ? String(data.edadMeses) : '');
-      setSexo(data.sexo || null);
-      setCastrado(data.castrado || false);
-      setDescripcion(data.descripcion || '');
-      setProposito(data.proposito || null);
-      setFotoPrincipal(data.fotoPrincipal || null);
-      setFotos(data.fotos || []);
+      const data = await api('GET', '/perros/mis-perros');
+      console.log('[Perfil] Perros cargados:', data.perros?.length || 0);
+      setPerrosList(data.perros || []);
+      if (data.perros && data.perros.length > 0) {
+        setPerroIndex(0);
+        llenarFormulario(data.perros[0]);
+      }
     } catch (err) {
       console.log('[Perfil] Error al cargar:', JSON.stringify(err).slice(0, 200));
       Alert.alert('Error', 'No se pudo cargar el perfil');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const seleccionarPerro = (idx) => {
+    if (perrosList[idx]) {
+      setPerroIndex(idx);
+      llenarFormulario(perrosList[idx]);
     }
   };
 
@@ -213,6 +234,63 @@ export default function PerfilScreen({ onLogout, navigation }) {
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <Text style={styles.title}>🐾 Mi Perfil</Text>
 
+      {/* ========== SELECTOR DE PERROS ========== */}
+      {perrosList.length > 1 && (
+        <View style={styles.perroSelector}>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+            {perrosList.map((p, idx) => (
+              <Pressable
+                key={p.id}
+                style={[
+                  styles.perroSelectorItem,
+                  idx === perroIndex && styles.perroSelectorItemActive,
+                ]}
+                onPress={() => seleccionarPerro(idx)}
+              >
+                <View style={styles.perroSelectorAvatar}>
+                  {p.fotoPrincipal ? (
+                    <Image source={{ uri: p.fotoPrincipal }} style={styles.perroSelectorImg} />
+                  ) : (
+                    <MaterialIcons name="pets" size={16} color={colors.accent} />
+                  )}
+                </View>
+                <Text
+                  style={[
+                    styles.perroSelectorName,
+                    idx === perroIndex && styles.perroSelectorNameActive,
+                  ]}
+                  numberOfLines={1}
+                >
+                  {p.nombre || 'Sin nombre'}
+                </Text>
+              </Pressable>
+            ))}
+            <Pressable
+              style={styles.perroSelectorAdd}
+              onPress={() => nav.navigate('CrearPerfilPerro')}
+            >
+              <MaterialIcons name="add" size={20} color={colors.primary} />
+            </Pressable>
+          </ScrollView>
+        </View>
+      )}
+
+      {perrosList.length === 0 && !loading && (
+        <View style={styles.sinPerrosContainer}>
+          <MaterialIcons name="pets" size={48} color={colors.border} />
+          <Text style={styles.sinPerrosText}>No tienes perros registrados</Text>
+          <Pressable
+            style={styles.sinPerrosBtn}
+            onPress={() => nav.navigate('CrearPerfilPerro')}
+          >
+            <MaterialIcons name="add" size={18} color="#FFF" />
+            <Text style={styles.sinPerrosBtnText}>Crear perfil de perro</Text>
+          </Pressable>
+        </View>
+      )}
+
+      {perrosList.length > 0 && (
+      <>
       {/* ========== GALERÍA DE FOTOS ========== */}
       <Text style={styles.sectionTitle}>📸 Fotos</Text>
 
@@ -406,6 +484,9 @@ export default function PerfilScreen({ onLogout, navigation }) {
         </Pressable>
       </View>
 
+      </>
+      )}
+
       <View style={styles.divider} />
 
       {/* Cerrar sesión */}
@@ -428,49 +509,8 @@ export default function PerfilScreen({ onLogout, navigation }) {
 
       <View style={styles.divider} />
 
-      {/* Eliminar perfil */}
-      <Text style={styles.deleteSectionTitle}>🗑️ Zona de peligro</Text>
-
-      <Pressable
-        style={({ pressed }) => [
-          styles.deleteButton,
-          pressed && { opacity: 0.8 },
-          eliminandoPerfil && { opacity: 0.5 },
-        ]}
-        onPress={() => {
-          Alert.alert(
-            'Eliminar perfil de ' + (perro?.nombre || 'tu perro'),
-            'Se borrarán todas sus fotos. Esta acción no se puede deshacer.',
-            [
-              { text: 'Cancelar', style: 'cancel' },
-              { text: 'Eliminar', style: 'destructive', onPress: async () => {
-                setEliminandoPerfil(true);
-                try {
-                  await api('DELETE', '/perros/' + perroId);
-                  Alert.alert('Perfil eliminado', 'El perfil de ' + perro?.nombre + ' ha sido eliminado.');
-                  setPerro(null);
-                  setPerroId(null);
-                } catch (error) {
-                  const msg = error?.error?.message || error?.message || 'Error al eliminar';
-                  Alert.alert('Error', msg);
-                } finally {
-                  setEliminandoPerfil(false);
-                }
-              } },
-            ]
-          );
-        }}
-        disabled={eliminandoPerfil || !perroId}
-      >
-        {eliminandoPerfil ? (
-          <ActivityIndicator color={colors.error} />
-        ) : (
-          <>
-            <MaterialIcons name="pets-off" size={18} color={colors.error} style={{ marginRight: spacing.sm }} />
-            <Text style={styles.deleteButtonText}>Eliminar perfil de {perro?.nombre || 'mi perro'}</Text>
-          </>
-        )}
-      </Pressable>
+      {/* Eliminar cuenta (borra perro + fotos + cuenta) */}
+      <Text style={styles.deleteSectionTitle}>🗑️ Eliminar todo</Text>
 
       <Pressable
         style={({ pressed }) => [
@@ -482,17 +522,17 @@ export default function PerfilScreen({ onLogout, navigation }) {
         onPress={() => {
           Alert.alert(
             'Eliminar cuenta',
-            'Se eliminará tu perfil de perro, fotos, matches y toda tu información. Esta acción no se puede deshacer.',
+            'Se eliminará tu perfil, fotos, matches y toda tu información. Esta acción no se puede deshacer.',
             [
               { text: 'Cancelar', style: 'cancel' },
               {
-                text: 'Eliminar cuenta',
+                text: 'Eliminar todo',
                 style: 'destructive',
                 onPress: async () => {
                   setEliminandoCuenta(true);
                   try {
                     await api('DELETE', '/usuarios/me');
-                    Alert.alert('Cuenta eliminada', 'Tu cuenta ha sido desactivada.');
+                    Alert.alert('Cuenta eliminada', 'Tu cuenta y perfil han sido eliminados.');
                     onLogout();
                   } catch (error) {
                     const msg = error?.error?.message || error?.message || 'Error al eliminar';
@@ -512,7 +552,7 @@ export default function PerfilScreen({ onLogout, navigation }) {
         ) : (
           <>
             <MaterialIcons name="delete-forever" size={18} color="#B71C1C" style={{ marginRight: spacing.sm }} />
-            <Text style={[styles.deleteButtonText, { color: '#B71C1C' }]}>Eliminar cuenta permanentemente</Text>
+            <Text style={[styles.deleteButtonText, { color: '#B71C1C' }]}>Eliminar cuenta y perfil</Text>
           </>
         )}
       </Pressable>
@@ -569,6 +609,90 @@ const styles = StyleSheet.create({
     height: 1,
     backgroundColor: colors.border,
     marginVertical: spacing.xxl,
+  },
+
+  // ===== SELECTOR DE PERROS =====
+  perroSelector: {
+    flexDirection: 'row',
+    marginBottom: spacing.lg,
+  },
+  perroSelectorItem: {
+    alignItems: 'center',
+    marginRight: spacing.md,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+    borderRadius: radius.lg,
+    borderWidth: 2,
+    borderColor: 'transparent',
+  },
+  perroSelectorItemActive: {
+    borderColor: colors.primary,
+    backgroundColor: colors.bgCard,
+  },
+  perroSelectorAvatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: colors.bgCard,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: colors.border,
+    overflow: 'hidden',
+  },
+  perroSelectorImg: {
+    width: 40,
+    height: 40,
+    resizeMode: 'cover',
+  },
+  perroSelectorName: {
+    fontSize: 11,
+    color: colors.textLight,
+    marginTop: 4,
+    maxWidth: 70,
+    textAlign: 'center',
+    fontWeight: '500',
+  },
+  perroSelectorNameActive: {
+    color: colors.primary,
+    fontWeight: '700',
+  },
+  perroSelectorAdd: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: colors.bgCard,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: colors.primary,
+    borderStyle: 'dashed',
+  },
+  sinPerrosContainer: {
+    alignItems: 'center',
+    paddingVertical: spacing.xxl * 2,
+    gap: spacing.md,
+  },
+  sinPerrosText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: colors.textLight,
+    textAlign: 'center',
+  },
+  sinPerrosBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.primary,
+    borderRadius: radius.full,
+    paddingHorizontal: spacing.xl,
+    paddingVertical: spacing.md,
+    gap: spacing.sm,
+    ...shadows.sm,
+  },
+  sinPerrosBtnText: {
+    color: '#FFF',
+    fontSize: 14,
+    fontWeight: '700',
   },
 
   // ===== GALERÍA =====

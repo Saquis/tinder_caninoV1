@@ -19,9 +19,54 @@ export default function RegisterScreen({ navigation: navProp, onRegister }) {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
   const [showPass, setShowPass] = useState(false);
   const [showConf, setShowConf] = useState(false);
   const [aceptaTerminos, setAceptaTerminos] = useState(false);
+
+  // Google Auth
+  const googleClientId = Constants.expoConfig?.extra?.googleClientId;
+  const [googleRequest, googleResponse, googlePromptAsync] = Google.useAuthRequest({
+    clientId: googleClientId || undefined,
+    responseType: 'id_token',
+  });
+
+  useEffect(() => {
+    if (googleResponse?.type === 'success' && googleResponse?.params?.id_token) {
+      handleGoogleToken(googleResponse.params.id_token);
+    }
+  }, [googleResponse]);
+
+  const handleGoogleToken = async (idToken) => {
+    setGoogleLoading(true);
+    try {
+      const data = await api('POST', '/auth/google', { idToken });
+      if (data.accessToken) {
+        await saveTokens(data.accessToken, data.refreshToken);
+        onRegister(data.tienePerro !== undefined ? data.tienePerro : false);
+      }
+    } catch (error) {
+      const msg = error?.error?.message || error?.message || 'Error al iniciar sesión con Google';
+      Alert.alert('Error', msg);
+    } finally {
+      setGoogleLoading(false);
+    }
+  };
+
+  const handleGooglePress = () => {
+    if (!googleClientId) {
+      Alert.alert(
+        'Google pendiente',
+        'Agrega GOOGLE_CLIENT_ID en app.json extra para activar el login con Google.'
+      );
+      return;
+    }
+    if (googleLoading) return;
+    googlePromptAsync({ useProxy: true }).catch(err => {
+      console.error('[Google] Error al abrir auth:', err);
+      Alert.alert('Error', 'No se pudo abrir la pantalla de Google');
+    });
+  };
 
   const handleRegister = async () => {
     if (!nombre.trim() || nombre.trim().length < 2) {
@@ -180,10 +225,15 @@ export default function RegisterScreen({ navigation: navProp, onRegister }) {
               <View style={styles.dividerLine} />
             </View>
             <Pressable
-              style={({ pressed }) => [styles.googleBtn, pressed && styles.googleBtnPressed]}
-              onPress={() => Alert.alert('Próximamente', 'Login con Google estará disponible pronto')}
+              style={({ pressed }) => [styles.googleBtn, pressed && styles.googleBtnPressed, googleLoading && { opacity: 0.5 }]}
+              onPress={handleGooglePress}
+              disabled={googleLoading}
             >
-              <FontAwesome name="google" size={18} color={colors.accentDark} />
+              {googleLoading ? (
+                <ActivityIndicator size="small" color={colors.accentDark} />
+              ) : (
+                <FontAwesome name="google" size={18} color={colors.accentDark} />
+              )}
               <Text style={styles.googleBtnText}>Google</Text>
             </Pressable>
 

@@ -6,6 +6,7 @@ import SwipeScreen from '../screens/SwipeScreen';
 import MatchesScreen from '../screens/MatchesScreen';
 import ChatScreen from '../screens/ChatScreen';
 import PerfilScreen from '../screens/PerfilScreen';
+import CrearPerfilPerroScreen from '../screens/CrearPerfilPerroScreen';
 import MapScreen from '../screens/MapScreen';
 import PrivacyScreen from '../screens/PrivacyScreen';
 import TermsScreen from '../screens/TermsScreen';
@@ -19,6 +20,12 @@ function PerfilStack({ onLogout }) {
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="PerfilPrincipal">
         {props => <PerfilScreen {...props} onLogout={onLogout} />}
+      </Stack.Screen>
+      <Stack.Screen
+        name="CrearPerfilPerro"
+        options={{ headerShown: false }}
+      >
+        {props => <CrearPerfilPerroScreen {...props} onCompletado={() => {}} onLogout={onLogout} />}
       </Stack.Screen>
       <Stack.Screen
         name="Privacy"

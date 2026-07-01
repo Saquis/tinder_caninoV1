@@ -5,9 +5,9 @@ const { Router } = require('express');
 const { crearUsuariosController } = require('../controllers/usuarios.controller');
 const { crearAuthMiddleware } = require('../middleware/auth.middleware');
 
-function crearUsuariosRoutes(usuarioRepository, reporteRepository, bloqueoRepository, authService) {
+function crearUsuariosRoutes(usuarioRepository, reporteRepository, bloqueoRepository, authService, perroRepository, storageService) {
   const router = Router();
-  const controller = crearUsuariosController(usuarioRepository, reporteRepository, bloqueoRepository);
+  const controller = crearUsuariosController(usuarioRepository, reporteRepository, bloqueoRepository, perroRepository, storageService);
   const auth = crearAuthMiddleware(authService);
 
   router.get('/me', auth.requiereAuth, controller.perfil);

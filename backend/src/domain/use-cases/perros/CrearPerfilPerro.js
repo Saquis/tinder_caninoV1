@@ -9,11 +9,6 @@ class CrearPerfilPerro {
   }
 
   async execute({ usuarioId, nombre, raza, edadMeses, sexo, castrado, descripcion, proposito, latitud, longitud }) {
-    const existente = await this.perroRepository.findByUsuarioId(usuarioId);
-    if (existente && existente.activo) {
-      throw new (require('../../entities/Usuario').AppError)('Ya tienes un perro registrado. Edítalo o elimínalo antes de crear otro.', 409);
-    }
-
     // Normalizar: multipart/form-data envía campos como string
     if (typeof edadMeses === 'string') {
       edadMeses = parseInt(edadMeses, 10);

@@ -27,6 +27,7 @@ function crearPerrosRoutes(perroRepository, swipeRepository, bloqueoRepository, 
 
   router.post('/', auth.requiereAuth, upload.single('foto'), controller.crearPerro);
   router.get('/mi-perro', auth.requiereAuth, controller.miPerro);
+  router.get('/mis-perros', auth.requiereAuth, controller.misPerros);
   router.get('/explorar', auth.requiereAuth, controller.explorar);
   router.put('/:id', auth.requiereAuth, controller.actualizarPerro);
   router.put('/:id/ubicacion', auth.requiereAuth, controller.actualizarUbicacion);

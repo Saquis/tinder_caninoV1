@@ -40,9 +40,19 @@ function crearPerrosController(perroRepository, swipeRepository, bloqueoReposito
     async miPerro(req, res, next) {
       try {
         console.log('[PerrosController] miPerro → usuario:', req.usuario.id);
-        const perro = await perroRepository.findByUsuarioId(req.usuario.id);
-        if (!perro) return res.status(404).json({ error: { message: 'No tienes un perro registrado' } });
-        res.json(perro.toJSON());
+        const perros = await perroRepository.findByUsuarioId(req.usuario.id);
+        if (!perros || perros.length === 0) {
+          return res.status(404).json({ error: { message: 'No tienes un perro registrado' } });
+        }
+        res.json(perros[0].toJSON());
+      } catch (e) { next(e); }
+    },
+
+    async misPerros(req, res, next) {
+      try {
+        console.log('[PerrosController] misPerros → usuario:', req.usuario.id);
+        const perros = await perroRepository.findByUsuarioId(req.usuario.id);
+        res.json({ perros: (perros || []).map(p => p.toJSON()) });
       } catch (e) { next(e); }
     },
 
@@ -72,7 +82,7 @@ function crearPerrosController(perroRepository, swipeRepository, bloqueoReposito
           return res.status(403).json({ error: { message: 'No tienes permiso para modificar este perro' } });
         }
         const resultado = await actualizar.execute({ id: req.params.id, usuarioId: req.usuario.id, cambios: req.body });
-        res.json(resultado.toJSON());
+        res.json(resultado);
       } catch (e) { next(e); }
     },
 
@@ -188,9 +198,11 @@ function crearPerrosController(perroRepository, swipeRepository, bloqueoReposito
       try {
         console.log('[PerrosController] actualizarUbicacion → usuario:', req.usuario.id);
         const { latitud, longitud } = req.body;
-        const perro = await perroRepository.findByUsuarioId(req.usuario.id);
-        if (!perro) return res.status(404).json({ error: { message: 'No tienes un perro registrado' } });
-        await perroRepository.update(perro.id, { latitud, longitud });
+        const perros = await perroRepository.findByUsuarioId(req.usuario.id);
+        if (!perros || perros.length === 0) {
+          return res.status(404).json({ error: { message: 'No tienes un perro registrado' } });
+        }
+        await perroRepository.update(perros[0].id, { latitud, longitud });
         console.log('[PerrosController] Ubicación actualizada:', latitud, longitud);
         res.json({ message: 'Ubicación actualizada' });
       } catch (e) { next(e); }
