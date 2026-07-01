@@ -22,12 +22,13 @@ export default function LoginScreen({ navigation, onLogin }) {
   const [showPassword, setShowPassword] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
 
-  // Google Auth
+  // Google Auth — solo inicializa si hay clientId configurado
   const googleClientId = Constants.expoConfig?.extra?.googleClientId;
-  const [googleRequest, googleResponse, googlePromptAsync] = Google.useAuthRequest({
-    clientId: googleClientId || undefined,
+  const googleConfig = googleClientId ? {
+    clientId: googleClientId,
     responseType: 'id_token',
-  });
+  } : null;
+  const [googleRequest, googleResponse, googlePromptAsync] = Google.useAuthRequest(googleConfig);
 
   // Procesar respuesta de Google
   useEffect(() => {

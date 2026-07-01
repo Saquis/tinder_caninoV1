@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View, Text, TextInput, Pressable, StyleSheet, Alert,
   ActivityIndicator, ScrollView, KeyboardAvoidingView, Platform
@@ -9,6 +9,11 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { api, saveTokens } from '../api/client';
 import { colors, spacing, radius, shadows, typography } from '../styles/theme';
 import { useNavigation } from '@react-navigation/native';
+import * as WebBrowser from 'expo-web-browser';
+import * as Google from 'expo-auth-session/providers/google';
+import Constants from 'expo-constants';
+
+WebBrowser.maybeCompleteAuthSession();
 
 const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[A-Za-z\d!@#$%^&*()_+]{6,}$/;
 
@@ -24,12 +29,13 @@ export default function RegisterScreen({ navigation: navProp, onRegister }) {
   const [showConf, setShowConf] = useState(false);
   const [aceptaTerminos, setAceptaTerminos] = useState(false);
 
-  // Google Auth
+  // Google Auth — solo inicializa si hay clientId configurado
   const googleClientId = Constants.expoConfig?.extra?.googleClientId;
-  const [googleRequest, googleResponse, googlePromptAsync] = Google.useAuthRequest({
-    clientId: googleClientId || undefined,
+  const googleConfig = googleClientId ? {
+    clientId: googleClientId,
     responseType: 'id_token',
-  });
+  } : null;
+  const [googleRequest, googleResponse, googlePromptAsync] = Google.useAuthRequest(googleConfig);
 
   useEffect(() => {
     if (googleResponse?.type === 'success' && googleResponse?.params?.id_token) {
