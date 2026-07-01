@@ -22,13 +22,13 @@ export default function LoginScreen({ navigation, onLogin }) {
   const [showPassword, setShowPassword] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
 
-  // Google Auth — solo inicializa si hay clientId configurado
-  const googleClientId = Constants.expoConfig?.extra?.googleClientId;
-  const googleConfig = googleClientId ? {
+  // Google Auth — siempre pasa un string al hook para evitar crash con null
+  const googleClientId = Constants.expoConfig?.extra?.googleClientId || 'NO_CONFIGURED';
+  const hasGoogleConfig = googleClientId !== 'NO_CONFIGURED';
+  const [googleRequest, googleResponse, googlePromptAsync] = Google.useAuthRequest({
     clientId: googleClientId,
     responseType: 'id_token',
-  } : null;
-  const [googleRequest, googleResponse, googlePromptAsync] = Google.useAuthRequest(googleConfig);
+  });
 
   // Procesar respuesta de Google
   useEffect(() => {
@@ -54,7 +54,7 @@ export default function LoginScreen({ navigation, onLogin }) {
   };
 
   const handleGooglePress = () => {
-    if (!googleClientId) {
+    if (!hasGoogleConfig) {
       Alert.alert(
         'Google pendiente',
         'El login con Google necesita configuración. Agrega GOOGLE_CLIENT_ID en app.json extra.'
