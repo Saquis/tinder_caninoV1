@@ -76,8 +76,8 @@ function crearApp() {
   app.use('/api/matches', crearMatchesRoutes(matchRepository, authService));
   app.use('/api/chat', crearChatRoutes(mensajeRepository, matchRepository, authService));
 
-  // Catch-all 404 — rutas no encontradas
-  app.use('*', (req, res) => {
+  // Catch-all 404 — rutas no encontradas (Express 5 no acepta '*' como path)
+  app.use((req, res) => {
     res.status(404).json({ error: { message: `Ruta no encontrada: ${req.method} ${req.originalUrl}` } });
   });
 
