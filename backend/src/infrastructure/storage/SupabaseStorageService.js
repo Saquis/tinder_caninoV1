@@ -4,9 +4,19 @@
 const { createClient } = require('@supabase/supabase-js');
 const config = require('../../config/env');
 
+// WebSocket para Node < 22
+let wsTransport;
+try {
+  wsTransport = require('ws');
+} catch {
+  wsTransport = undefined;
+}
+
 class SupabaseStorageService {
   constructor() {
-    this.supabase = createClient(config.supabase.url, config.supabase.serviceKey);
+    this.supabase = createClient(config.supabase.url, config.supabase.serviceKey, {
+      realtime: wsTransport ? { transport: wsTransport } : {},
+    });
     this.bucket = 'fotos-perros';
   }
 
