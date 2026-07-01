@@ -69,6 +69,7 @@ export default function MapScreen() {
   };
 
   return (
+    <>
     <View style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
@@ -243,13 +244,13 @@ export default function MapScreen() {
       </View>
     </View>
 
-      {/* Perfil detalle */}
       <PerroDetailModal
         visible={!!perroDetail}
         perro={perroDetail}
         km={perroDetail && miUbicacion ? calcularDist(miUbicacion.lat, miUbicacion.lng, perroDetail.latitud, perroDetail.longitud) : null}
         onCerrar={() => setPerroDetail(null)}
       />
+    </>
   );
 }
 
